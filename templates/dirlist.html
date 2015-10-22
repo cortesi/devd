@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <style>
+            #files {
+                border-collapse: collapse;
+            }
+            #files tr {
+                border-bottom: 1px solid #c0c0c0;
+            }
+            #files td {
+                padding: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>{{.Name}}</h1>
+        <table id="files">
+            {{ range .Files }}
+    			<tr>
+                    <td class="name">
+                        <a href="{{.Name}}">{{.Name}}{{ if .IsDir }}/{{ end }}</a>
+                    </td>
+                    <td class="size">{{ .Size | bytes }}</td>
+                    <td class="modified">{{ .ModTime | reltime }}</td>
+                </tr>
+            {{ end }}
+        </table>
+    </body>
+</html>

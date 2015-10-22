@@ -1,0 +1,42 @@
+#!/bin/sh
+set -e
+
+echo "Making static inclusions..."
+rice embed-go
+cd livereload
+rice embed-go
+cd ..
+
+echo "Installing locally"
+go install
+VERSION=$(devd --version 2>&1 >/dev/null)
+echo "Version is $VERSION"
+
+WINDIR="devd-$VERSION-windows64"
+LINUXDIR="devd-$VERSION-linux64"
+DARWINDIR="devd-$VERSION-osx64"
+rm -fr ./tmp/$WINDIR* ./tmp/$LINUXDIR* ./tmp/$DARWINDIR*
+
+echo "Building..."
+
+echo $DARWINDIR
+mkdir -p ./tmp/$DARWINDIR
+env GOOS=darwin GOARCH=amd64 go build -o ./tmp/$DARWINDIR/devd
+
+echo $LINUXDIR
+mkdir -p ./tmp/$LINUXDIR
+env GOOS=linux GOARCH=amd64 go build -o ./tmp/$LINUXDIR/devd
+
+echo $WINDIR
+mkdir -p ./tmp/$WINDIR
+env GOOS=windows GOARCH=amd64 go build -o ./tmp/$WINDIR/devd.exe
+
+echo "Removing static inclusions..."
+find . -name "*.rice-box.go" -print0 | xargs -0 rm
+find . -name "rice-box.go" -print0 | xargs -0 rm
+
+echo "Creating packages"
+cd tmp
+tar -czvf $DARWINDIR.tgz $DARWINDIR
+tar -czvf $LINUXDIR.tgz $LINUXDIR
+zip -r "$WINDIR.zip" $WINDIR
