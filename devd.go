@@ -191,7 +191,7 @@ func main() {
 		PlaceHolder("REGEX").
 		Strings()
 
-	livereloadRoutes := kingpin.Flag("livereload", "Enable livereload").
+	livereloadRoutes := kingpin.Flag("livereload", "Enable livereload for static files").
 		Short('l').
 		Default("false").
 		Bool()
