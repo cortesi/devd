@@ -1,6 +1,8 @@
 
 [![Build Status](https://drone.io/github.com/cortesi/devd/status.png)](https://drone.io/github.com/cortesi/devd/latest)
 
+![screenshot](docs/devd-terminal.png "devd in action")
+
 # devd: a local webserver for developers
 
 - Reverse proxy and local file server
