@@ -43,7 +43,7 @@ information and full headers.
 
 To make quickly firing up an instance as simple as possible, devd automatically
 chooses an open port to run on (unless it's specified), and can open a browser
-window pointing to the daemon root for you (the *-o* flag in the example
+window pointing to the daemon root for you (the **-o** flag in the example
 above).
 
 
@@ -102,16 +102,13 @@ running app on api.devd.io:
 devd ./static api=http://localhost:8888
 </pre>
 
-Check out the docs at [the Github repo](https://github.com/cortesi/devd) for
-the full route specification syntax.
-
 
 ### Latency and bandwidth simulation
 
 Want to know what it's like to use your fancy 5mb HTML5 app from a mobile phone
 in Botswana? Look up the bandwidth and latency
 [here](http://www.cisco.com/c/en/us/solutions/collateral/service-provider/global-cloud-index-gci/CloudIndex_Supplement.html),
-and invoke devd like so (making sure to convert form kilobits per second to
+and invoke devd like so (making sure to convert from kilobits per second to
 kilobytes per second):
 
 <pre class="terminal">devd -d 114 -u 51 -l 75 .</pre>
@@ -137,7 +134,7 @@ Here's a route that serves the directory *./static* under */assets* on the serve
 All **devd.io** domains resolve to 127.0.0.1, and are used by devd for simple,
 rough-and-ready virtual hosting. You can add a sub-domain to the root
 specification. We recognize subdomains by the fact that they don't start with a
-leading **/**. This route serves the **/sttic** directory under
+leading **/**. This route serves the **/static** directory under
 **static.devd.io:[port]/assets**, where port is the port your server is bound
 to.
 
