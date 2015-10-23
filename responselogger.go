@@ -40,7 +40,7 @@ func (rl *ResponseLogWriter) logCode(code int, status string) {
 		if err != nil {
 			cl = "invalid content length header"
 		} else {
-			cl = fmt.Sprintf("(%s)", humanize.Bytes(uint64(cli)))
+			cl = fmt.Sprintf("%s", humanize.Bytes(uint64(cli)))
 		}
 	}
 	rl.log.Say("<- %s %s", codestr, cl)

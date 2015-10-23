@@ -9,6 +9,7 @@ package fileserver
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"mime"
@@ -58,6 +59,9 @@ func dirList(ci inject.CopyInject, logger termlog.Logger, w http.ResponseWriter,
 		logger.Shout("Failed to inject in dir listing: %s", err)
 		return
 	}
+	w.Header().Set(
+		"Content-Length", fmt.Sprintf("%d", buff.Len()+inj.Extra()),
+	)
 	_, err = inj.Copy(w)
 	if err != nil {
 		logger.Shout("Failed to inject in dir listing: %s", err)
