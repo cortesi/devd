@@ -6,6 +6,9 @@
 
 ![screenshot](docs/devd-terminal.png "devd in action")
 
+# Install
+
+Go to the [releases page](https://github.com/cortesi/devd/releases/latest), download the package for your OS, and copy the binary to somwhere on your PATH.
 
 # Quick start
 
