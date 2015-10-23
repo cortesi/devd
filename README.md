@@ -1,5 +1,6 @@
 
 [![Build Status](https://drone.io/github.com/cortesi/devd/status.png)](https://drone.io/github.com/cortesi/devd/latest)
+[![Release](https://img.shields.io/github/release/cortesi/devd.svg)](https://github.com/cortesi/devd/releases/latest)
 
 
 # devd: a local webserver for developers
