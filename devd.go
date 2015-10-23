@@ -25,7 +25,7 @@ import (
 
 const (
 	defaultDomain = "devd.io"
-	version       = "0.1"
+	version       = "0.2"
 	portLow       = 8000
 	portHigh      = 10000
 )

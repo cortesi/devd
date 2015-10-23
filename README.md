@@ -114,7 +114,7 @@ in Botswana? Look up the bandwidth and latency
 and invoke devd like so (making sure to convert from kilobits per second to
 kilobytes per second):
 
-<pre class="terminal">devd -d 114 -u 51 -l 75 .</pre>
+<pre class="terminal">devd -d 114 -u 51 -n 75 .</pre>
 
 Devd tries to be reasonably accurate in simulating bandwidth and latency - it
 uses a token bucket implementation for throttling, properly handles concurrent
