@@ -200,16 +200,17 @@ type writeFlusher interface {
 }
 
 type maxLatencyWriter struct {
+	sync.Mutex // protects Write + Flush
+
 	dst     writeFlusher
 	latency time.Duration
 
-	lk   sync.Mutex // protects Write + Flush
 	done chan bool
 }
 
 func (m *maxLatencyWriter) Write(p []byte) (int, error) {
-	m.lk.Lock()
-	defer m.lk.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	return m.dst.Write(p)
 }
 
@@ -224,9 +225,9 @@ func (m *maxLatencyWriter) flushLoop() {
 			}
 			return
 		case <-t.C:
-			m.lk.Lock()
+			m.Lock()
 			m.dst.Flush()
-			m.lk.Unlock()
+			m.Unlock()
 		}
 	}
 }
