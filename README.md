@@ -9,7 +9,7 @@
 
 # Install
 
-Go to the [releases page](https://github.com/cortesi/devd/releases/latest), download the package for your OS, and copy the binary to somwhere on your PATH.
+Go to the [releases page](https://github.com/cortesi/devd/releases/latest), download the package for your OS, and copy the binary to somewhere on your PATH.
 
 # Quick start
 
@@ -113,9 +113,9 @@ Want to know what it's like to use your fancy 5mb HTML5 app from a mobile phone
 in Botswana? Look up the bandwidth and latency
 [here](http://www.cisco.com/c/en/us/solutions/collateral/service-provider/global-cloud-index-gci/CloudIndex_Supplement.html),
 and invoke devd like so (making sure to convert from kilobits per second to
-kilobytes per second):
+kilobytes per second and account for the location of your server):
 
-<pre class="terminal">devd -d 114 -u 51 -n 75 .</pre>
+<pre class="terminal">devd -d 114 -u 51 -n 275 .</pre>
 
 Devd tries to be reasonably accurate in simulating bandwidth and latency - it
 uses a token bucket implementation for throttling, properly handles concurrent
@@ -135,12 +135,10 @@ Here's a route that serves the directory *./static* under */assets* on the serve
 /assets/=./static
 ```
 
-All **devd.io** domains resolve to 127.0.0.1, and are used by devd for simple,
-rough-and-ready virtual hosting. You can add a sub-domain to the root
-specification. We recognize subdomains by the fact that they don't start with a
-leading **/**. This route serves the **/static** directory under
-**static.devd.io:[port]/assets**, where port is the port your server is bound
-to.
+To use a **devd.io** subdomain (which will resolve to 127.0.0.1), just add it
+to the the front of the root specification. We recognize subdomains by the fact
+that they don't start with a leading **/**. So, this route serves the
+**/static** directory under **static.devd.io/assets**:
 
 ```
 static/assets=./static
