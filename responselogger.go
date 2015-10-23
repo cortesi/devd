@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/cortesi/devd/termlog"
 	"github.com/cortesi/devd/timer"
+	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 )
 
@@ -34,7 +36,12 @@ func (rl *ResponseLogWriter) logCode(code int, status string) {
 	}
 	cl := rl.Header().Get("content-length")
 	if cl != "" {
-		cl = fmt.Sprintf("(%s bytes)", cl)
+		cli, err := strconv.Atoi(cl)
+		if err != nil {
+			cl = "invalid content length header"
+		} else {
+			cl = fmt.Sprintf("(%s)", humanize.Bytes(uint64(cli)))
+		}
 	}
 	rl.log.Say("<- %s %s", codestr, cl)
 }
