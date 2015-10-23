@@ -17,11 +17,11 @@ const (
 
 // Server implements a Livereload server
 type Server struct {
+	sync.Mutex
 	broadcast chan<- string
 
 	logger      termlog.Logger
 	name        string
-	lock        sync.Mutex
 	connections map[*websocket.Conn]bool
 }
 
@@ -40,7 +40,7 @@ func NewServer(name string, logger termlog.Logger) *Server {
 
 func (s *Server) run(broadcast <-chan string) {
 	for m := range broadcast {
-		s.lock.Lock()
+		s.Lock()
 		for conn := range s.connections {
 			if conn == nil {
 				continue
@@ -51,10 +51,10 @@ func (s *Server) run(broadcast <-chan string) {
 				delete(s.connections, conn)
 			}
 		}
-		s.lock.Unlock()
+		s.Unlock()
 	}
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.Lock()
+	defer s.Unlock()
 	for conn := range s.connections {
 		delete(s.connections, conn)
 		conn.Close()
@@ -78,9 +78,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Can't upgrade.", 500)
 		return
 	}
-	s.lock.Lock()
+	s.Lock()
 	s.connections[conn] = true
-	s.lock.Unlock()
+	s.Unlock()
 }
 
 // Reload signals to connected clients that a given resource should be
