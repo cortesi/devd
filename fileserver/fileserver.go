@@ -51,6 +51,7 @@ func dirList(ci inject.CopyInject, logger termlog.Logger, w http.ResponseWriter,
 	data := dirData{Name: name, Files: files}
 	buff := bytes.NewBuffer(make([]byte, 0, 0))
 	err = templates.Lookup("dirlist.html").Execute(buff, data)
+	length := buff.Len()
 	if err != nil {
 		logger.Shout("Error producing directory listing: %s", err)
 	}
@@ -60,7 +61,7 @@ func dirList(ci inject.CopyInject, logger termlog.Logger, w http.ResponseWriter,
 		return
 	}
 	w.Header().Set(
-		"Content-Length", fmt.Sprintf("%d", buff.Len()+inj.Extra()),
+		"Content-Length", fmt.Sprintf("%d", length+inj.Extra()),
 	)
 	_, err = inj.Copy(w)
 	if err != nil {
