@@ -15,7 +15,9 @@ echo "Version is $VERSION"
 WINDIR="devd-$VERSION-windows64"
 LINUXDIR="devd-$VERSION-linux64"
 DARWINDIR="devd-$VERSION-osx64"
-rm -fr ./tmp/$WINDIR* ./tmp/$LINUXDIR* ./tmp/$DARWINDIR*
+ARMDIR="devd-$VERSION-linux-arm"
+
+rm -fr ./tmp/$WINDIR* ./tmp/$LINUXDIR* ./tmp/$DARWINDIR* ./tmp/$ARMDIR*
 
 echo "Building..."
 
@@ -31,6 +33,10 @@ echo $WINDIR
 mkdir -p ./tmp/$WINDIR
 env GOOS=windows GOARCH=amd64 go build -o ./tmp/$WINDIR/devd.exe
 
+echo $ARMDIR                                                                                                                                                             
+mkdir -p ./tmp/$ARMDIR                                                                                                                                                   
+env GOOS=linux GOARCH=arm go build -o ./tmp/$ARMDIR/devd       
+
 echo "Removing static inclusions..."
 find . -name "*.rice-box.go" -print0 | xargs -0 rm
 find . -name "rice-box.go" -print0 | xargs -0 rm
@@ -39,4 +45,5 @@ echo "Creating packages"
 cd tmp
 tar -czvf $DARWINDIR.tgz $DARWINDIR
 tar -czvf $LINUXDIR.tgz $LINUXDIR
+tar -czvf $ARMDIR.tgz $ARMDIR
 zip -r "$WINDIR.zip" $WINDIR
