@@ -3,10 +3,13 @@ package main
 import (
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/rjeczalik/notify"
+
+	"github.com/cortesi/devd/termlog"
 )
 
 // Reloader triggers a reload
@@ -90,18 +93,70 @@ func liveEvents(lr Reloader, ch chan []string) {
 	}
 }
 
+// Determine if a file should be included, based on the given exclude paths.
+func shouldInclude(file string, excludePatterns []string, log termlog.Logger) bool {
+	for _, pattern := range excludePatterns {
+		match, err := filepath.Match(pattern, file)
+
+		if err != nil {
+			log.Warn("Invalid pattern: `%s'", pattern)
+		} else if match {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Filter out the files that match the given exclude patterns.
+func filterFiles(pathPrefix string, files, excludePatterns []string, log termlog.Logger) []string {
+	if len(excludePatterns) > 0 {
+		i := 0
+
+		for j, file := range files {
+			relFile := strings.TrimPrefix(file, pathPrefix)
+
+			if shouldInclude(relFile, excludePatterns, log) {
+				if i != j {
+					files[i] = file
+				}
+
+				i++
+			}
+		}
+
+		return files[:i]
+	} else {
+		return files
+	}
+}
+
 // WatchPaths watches a set of paths, and broadcasts changes through reloader.
-func WatchPaths(paths []string, reloader Reloader) error {
+func WatchPaths(paths, excludePatterns []string, reloader Reloader, log termlog.Logger) error {
 	ch := make(chan []string, 1)
 	for _, path := range paths {
-		evtchan := make(chan notify.EventInfo, 1)
-		err := watch(path, evtchan)
+		absPath, err := filepath.Abs(path)
 		if err != nil {
 			return err
 		}
+		if absPath[len(absPath)-1] != filepath.Separator {
+			absPath += string(filepath.Separator)
+		}
+
+		evtchan := make(chan notify.EventInfo, 1)
+
+		err = watch(path, evtchan)
+		if err != nil {
+			return err
+		}
+
 		go func() {
 			for files := range batch(evtchan) {
-				ch <- files
+				files = filterFiles(absPath, files, excludePatterns, log)
+
+				if len(files) > 0 {
+					ch <- files
+				}
 			}
 		}()
 	}
