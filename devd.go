@@ -237,6 +237,11 @@ func main() {
 		Default("false").
 		Bool()
 
+	excludes := kingpin.Flag("exclude", "Glob pattern for files to exclude from livereload.").
+		PlaceHolder("PATTERN").
+		Short('x').
+		Strings()
+
 	routes := kingpin.Arg(
 		"route",
 		`Routes have the following forms:
@@ -246,6 +251,7 @@ func main() {
 			<URL>
 		`,
 	).Required().Strings()
+
 	kingpin.Version(version)
 
 	kingpin.Parse()
@@ -340,7 +346,7 @@ func main() {
 		}
 	}
 	if len(*watch) > 0 {
-		err = WatchPaths(*watch, lr)
+		err = WatchPaths(*watch, *excludes, lr, logger)
 		if err != nil {
 			kingpin.Fatalf("Could not watch path for livereload: %s", err)
 		}
