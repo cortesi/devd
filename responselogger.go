@@ -1,4 +1,4 @@
-package main
+package devd
 
 import (
 	"fmt"
@@ -13,11 +13,11 @@ import (
 
 // ResponseLogWriter is a ResponseWriter that logs
 type ResponseLogWriter struct {
-	log         termlog.Logger
-	rw          http.ResponseWriter
-	timr        *timer.Timer
+	Log         termlog.Logger
+	Resp        http.ResponseWriter
+	Timer       *timer.Timer
+	LogHeaders  bool
 	wroteHeader bool
-	logHeaders  bool
 }
 
 func (rl *ResponseLogWriter) logCode(code int, status string) {
@@ -43,14 +43,14 @@ func (rl *ResponseLogWriter) logCode(code int, status string) {
 			cl = fmt.Sprintf("%s", humanize.Bytes(uint64(cli)))
 		}
 	}
-	rl.log.Say("<- %s %s", codestr, cl)
+	rl.Log.Say("<- %s %s", codestr, cl)
 }
 
 // Header returns the header map that will be sent by WriteHeader.
 // Changing the header after a call to WriteHeader (or Write) has
 // no effect.
 func (rl *ResponseLogWriter) Header() http.Header {
-	return rl.rw.Header()
+	return rl.Resp.Header()
 }
 
 // Write writes the data to the connection as part of an HTTP reply.
@@ -62,8 +62,8 @@ func (rl *ResponseLogWriter) Write(data []byte) (int, error) {
 	if !rl.wroteHeader {
 		rl.WriteHeader(http.StatusOK)
 	}
-	ret, err := rl.rw.Write(data)
-	rl.timr.ResponseDone()
+	ret, err := rl.Resp.Write(data)
+	rl.Timer.ResponseDone()
 	return ret, err
 }
 
@@ -75,10 +75,10 @@ func (rl *ResponseLogWriter) Write(data []byte) (int, error) {
 func (rl *ResponseLogWriter) WriteHeader(code int) {
 	rl.wroteHeader = true
 	rl.logCode(code, http.StatusText(code))
-	if rl.logHeaders {
-		LogHeader(rl.log, rl.rw.Header())
+	if rl.LogHeaders {
+		LogHeader(rl.Log, rl.Resp.Header())
 	}
-	rl.timr.ResponseHeaders()
-	rl.rw.WriteHeader(code)
-	rl.timr.ResponseDone()
+	rl.Timer.ResponseHeaders()
+	rl.Resp.WriteHeader(code)
+	rl.Timer.ResponseDone()
 }

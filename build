@@ -8,7 +8,7 @@ rice embed-go
 cd ..
 
 echo "Installing locally"
-go install
+go install ./cmd/devd
 VERSION=$(devd --version 2>&1 >/dev/null)
 echo "Version is $VERSION"
 
@@ -23,19 +23,19 @@ echo "Building..."
 
 echo $DARWINDIR
 mkdir -p ./tmp/$DARWINDIR
-env GOOS=darwin GOARCH=amd64 go build -o ./tmp/$DARWINDIR/devd
+env GOOS=darwin GOARCH=amd64 go build -o ./tmp/$DARWINDIR/devd ./cmd/devd
 
 echo $LINUXDIR
 mkdir -p ./tmp/$LINUXDIR
-env GOOS=linux GOARCH=amd64 go build -o ./tmp/$LINUXDIR/devd
+env GOOS=linux GOARCH=amd64 go build -o ./tmp/$LINUXDIR/devd ./cmd/devd
 
 echo $WINDIR
 mkdir -p ./tmp/$WINDIR
-env GOOS=windows GOARCH=amd64 go build -o ./tmp/$WINDIR/devd.exe
+env GOOS=windows GOARCH=amd64 go build -o ./tmp/$WINDIR/devd.exe ./cmd/devd
 
-echo $ARMDIR                                                                                                                                                             
-mkdir -p ./tmp/$ARMDIR                                                                                                                                                   
-env GOOS=linux GOARCH=arm go build -o ./tmp/$ARMDIR/devd       
+echo $ARMDIR
+mkdir -p ./tmp/$ARMDIR
+env GOOS=linux GOARCH=arm go build -o ./tmp/$ARMDIR/devd ./cmd/devd
 
 echo "Removing static inclusions..."
 find . -name "*.rice-box.go" -print0 | xargs -0 rm

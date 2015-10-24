@@ -1,4 +1,4 @@
-package main
+package devd
 
 import (
 	"errors"
@@ -14,6 +14,8 @@ import (
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/reverseproxy"
 )
+
+const defaultDomain = "devd.io"
 
 func isURL(s string) bool {
 	return strings.HasPrefix(s, "http://") ||
@@ -124,14 +126,15 @@ func (f Route) MuxMatch() string {
 	return f.Host + f.Path
 }
 
-// A collection of routes
-type routeCollection map[string]Route
+// RouteCollection is a collection of routes
+type RouteCollection map[string]Route
 
-func (f *routeCollection) String() string {
+func (f *RouteCollection) String() string {
 	return fmt.Sprintf("%v", *f)
 }
 
-func (f routeCollection) Set(value string) error {
+// Set adds a route to the collection
+func (f RouteCollection) Set(value string) error {
 	s, err := newRoute(value)
 	if err != nil {
 		return err

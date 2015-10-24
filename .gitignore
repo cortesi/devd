@@ -1,4 +1,4 @@
 *.rice-box.go
 tmp
-devd
-devd.exe
+./devd
+./devd.exe

@@ -1,4 +1,4 @@
-package main
+package devd
 
 import (
 	"os"
@@ -165,7 +165,7 @@ func WatchPaths(paths, excludePatterns []string, reloader Reloader, log termlog.
 }
 
 // WatchRoutes watches the route collection, and broadcasts changes through reloader.
-func WatchRoutes(routes routeCollection, reloader Reloader) error {
+func WatchRoutes(routes RouteCollection, reloader Reloader) error {
 	c := make(chan []string, 1)
 	for i := range routes {
 		err := routes[i].Watch(c)

@@ -1,4 +1,4 @@
-package main
+package devd
 
 import (
 	"fmt"
@@ -155,7 +155,7 @@ func TestRouteHandler(t *testing.T) {
 }
 
 func TestRouteCollection(t *testing.T) {
-	var m = make(routeCollection)
+	var m = make(RouteCollection)
 	m.String()
 	err := m.Set("foo=bar")
 	if err != nil {

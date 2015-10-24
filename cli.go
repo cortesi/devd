@@ -1,4 +1,4 @@
-package main
+package devd
 
 import (
 	"crypto/tls"
@@ -24,10 +24,9 @@ import (
 )
 
 const (
-	defaultDomain = "devd.io"
-	version       = "0.2"
-	portLow       = 8000
-	portHigh      = 10000
+	version  = "0.2"
+	portLow  = 8000
+	portHigh = 10000
 )
 
 var (
@@ -125,10 +124,10 @@ func devdHandler(log termlog.Logger, route Route, templates *template.Template, 
 		next.ServeHTTPContext(
 			ctx,
 			&ResponseLogWriter{
-				log:        sublog,
-				rw:         w,
-				timr:       &timr,
-				logHeaders: logHeaders,
+				Log:        sublog,
+				Resp:       w,
+				Timer:      &timr,
+				LogHeaders: logHeaders,
 			},
 			r,
 		)
@@ -153,7 +152,8 @@ func formatURL(tls bool, httpIP string, port int) string {
 	return fmt.Sprintf("%s://%s:%d", proto, host, port)
 }
 
-func main() {
+// CLI fires off the command-line interface
+func CLI() {
 	httpIP := kingpin.Flag("address", "Address to listen on").
 		Short('A').
 		Default("127.0.0.1").
@@ -307,7 +307,7 @@ func main() {
 		ignores = append(ignores, v)
 	}
 
-	routeColl := make(routeCollection)
+	routeColl := make(RouteCollection)
 	for _, s := range *routes {
 		err := routeColl.Set(s)
 		if err != nil {
