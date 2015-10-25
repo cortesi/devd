@@ -159,14 +159,13 @@ type Devd struct {
 	CertFile    string
 
 	// Listening address
-	AllInterfaces bool
-	Address       string
-	Port          int
+	Address string
+	Port    int
 
 	// Shaping
 	Latency  int
-	DownKbps int
-	UpKbps   int
+	DownKbps uint
+	UpKbps   uint
 
 	// Livereload
 	LivereloadRoutes bool
@@ -174,10 +173,10 @@ type Devd struct {
 	Excludes         []string
 
 	// Logging
-	Debug       bool
-	LogHeaders  bool
-	EnableTimer bool
-	IgnoreLogs  []string
+	Debug      bool
+	LogHeaders bool
+	LogTime    bool
+	IgnoreLogs []string
 }
 
 // Serve starts the devd server
@@ -186,37 +185,11 @@ func (dd *Devd) Serve() error {
 	if dd.Debug {
 		logger.Enable("debug")
 	}
-	if dd.EnableTimer {
+	if dd.LogTime {
 		logger.Enable("timer")
 	}
-	if dd.DownKbps == 0 {
-		dd.DownKbps = slowdown.MaxRate
-	}
-	if dd.UpKbps == 0 {
-		dd.UpKbps = slowdown.MaxRate
-	}
 
-	if dd.AllInterfaces {
-		dd.Address = "0.0.0.0"
-	}
-
-	tlsEnabled := false
-	if dd.CertFile != "" {
-		tlsEnabled = true
-	}
-
-	var hl net.Listener
-	var err error
-	if dd.Port > 0 {
-		hl, err = net.Listen("tcp", fmt.Sprintf("%v:%d", dd.Address, dd.Port))
-	} else {
-		hl, err = pickPort(dd.Address, portLow, portHigh, tlsEnabled)
-	}
-	if err != nil {
-		return fmt.Errorf("Could not bind to port: %s", err)
-	}
-
-	templates := ricetemp.MustMakeTemplates(rice.MustFindBox("templates"))
+	templates, err := ricetemp.MakeTemplates(rice.MustFindBox("templates"))
 	if err != nil {
 		return fmt.Errorf("Error loading templates: %s", err)
 	}
@@ -275,6 +248,20 @@ func (dd *Devd) Serve() error {
 		}
 	}
 
+	var hl net.Listener
+	tlsEnabled := false
+	if dd.CertFile != "" {
+		tlsEnabled = true
+	}
+	if dd.Port > 0 {
+		hl, err = net.Listen("tcp", fmt.Sprintf("%v:%d", dd.Address, dd.Port))
+	} else {
+		hl, err = pickPort(dd.Address, portLow, portHigh, tlsEnabled)
+	}
+	if err != nil {
+		return fmt.Errorf("Could not bind to port: %s", err)
+	}
+
 	var tlsConfig *tls.Config
 	if dd.CertFile != "" {
 		tlsConfig, err = getTLSConfig(dd.CertFile)
@@ -283,11 +270,7 @@ func (dd *Devd) Serve() error {
 		}
 		hl = tls.NewListener(hl, tlsConfig)
 	}
-	hl = slowdown.NewSlowListener(
-		hl,
-		float64(dd.UpKbps)*1024,
-		float64(dd.DownKbps)*1024,
-	)
+	hl = slowdown.NewSlowListener(hl, dd.UpKbps*1024, dd.DownKbps*1024)
 
 	url := formatURL(tlsEnabled, dd.Address, hl.Addr().(*net.TCPAddr).Port)
 	logger.Say("Listening on %s (%s)", url, hl.Addr().String())

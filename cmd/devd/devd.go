@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	httpIP := kingpin.Flag("address", "Address to listen on").
+	address := kingpin.Flag("address", "Address to listen on").
 		Short('A').
 		Default("127.0.0.1").
 		String()
@@ -21,21 +21,21 @@ func main() {
 		Default("").
 		ExistingFile()
 
-	throttleDownKbps := kingpin.Flag(
+	downKbps := kingpin.Flag(
 		"down",
 		"Throttle downstream from the client to N kilobytes per second",
 	).
 		PlaceHolder("N").
 		Short('d').
 		Default("0").
-		Int()
+		Uint()
 
 	logHeaders := kingpin.Flag("logheaders", "Log headers").
 		Short('H').
 		Default("false").
 		Bool()
 
-	ignoreHeaders := kingpin.Flag(
+	ignoreLogs := kingpin.Flag(
 		"ignore",
 		"Disable logging matching requests. Regexes are matched over 'host/path'",
 	).
@@ -59,26 +59,26 @@ func main() {
 		Default("false").
 		Bool()
 
-	httpPort := kingpin.Flag(
+	port := kingpin.Flag(
 		"port",
 		"Port to listen on - if not specified, devd will auto-pick a sensible port",
 	).
 		Short('p').
 		Int()
 
-	enableTimer := kingpin.Flag("logtime", "Log timing").
+	logTime := kingpin.Flag("logtime", "Log timing").
 		Short('T').
 		Default("false").
 		Bool()
 
-	throttleUpKbps := kingpin.Flag(
+	upKbps := kingpin.Flag(
 		"up",
 		"Throttle upstream from the client to N kilobytes per second",
 	).
 		PlaceHolder("N").
 		Short('u').
 		Default("0").
-		Int()
+		Uint()
 
 	watch := kingpin.Flag("watch", "Watch path to trigger livereload").
 		PlaceHolder("PATH").
@@ -107,18 +107,23 @@ func main() {
 	kingpin.Version(devd.Version)
 
 	kingpin.Parse()
+
+	realAddr := *address
+	if *allInterfaces {
+		realAddr = "0.0.0.0"
+	}
+
 	dd := devd.Devd{
-		Routes:        *routes,
-		OpenBrowser:   *openBrowser,
-		CertFile:      *certFile,
-		AllInterfaces: *allInterfaces,
-		Address:       *httpIP,
-		Port:          *httpPort,
+		Routes:      *routes,
+		OpenBrowser: *openBrowser,
+		CertFile:    *certFile,
+		Address:     realAddr,
+		Port:        *port,
 
 		// Shaping
 		Latency:  *latency,
-		DownKbps: *throttleDownKbps,
-		UpKbps:   *throttleUpKbps,
+		DownKbps: *downKbps,
+		UpKbps:   *upKbps,
 
 		// Livereload
 		LivereloadRoutes: *livereloadRoutes,
@@ -126,10 +131,10 @@ func main() {
 		Excludes:         *excludes,
 
 		// Logging
-		Debug:       *debug,
-		LogHeaders:  *logHeaders,
-		EnableTimer: *enableTimer,
-		IgnoreLogs:  *ignoreHeaders,
+		Debug:      *debug,
+		LogHeaders: *logHeaders,
+		LogTime:    *logTime,
+		IgnoreLogs: *ignoreLogs,
 	}
 	err := dd.Serve()
 	if err != nil {

@@ -74,10 +74,7 @@ func (r Route) Watch(ch chan []string) error {
 				for i, fpath := range files {
 					files[i] = path.Join(
 						r.Path,
-						strings.TrimPrefix(
-							fpath,
-							string(ep),
-						),
+						strings.TrimPrefix(fpath, string(ep)),
 					)
 				}
 				ch <- files
@@ -112,23 +109,18 @@ func shouldInclude(file string, excludePatterns []string, log termlog.Logger) bo
 func filterFiles(pathPrefix string, files, excludePatterns []string, log termlog.Logger) []string {
 	if len(excludePatterns) > 0 {
 		i := 0
-
 		for j, file := range files {
 			relFile := strings.TrimPrefix(file, pathPrefix)
-
 			if shouldInclude(relFile, excludePatterns, log) {
 				if i != j {
 					files[i] = file
 				}
-
 				i++
 			}
 		}
-
 		return files[:i]
-	} else {
-		return files
 	}
+	return files
 }
 
 // WatchPaths watches a set of paths, and broadcasts changes through reloader.

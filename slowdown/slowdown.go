@@ -12,7 +12,7 @@ import (
 
 // The maximum rate you should specify for readrate or writerate.If this is too
 // high, the token bucket implementation seems to break down.
-var MaxRate = (1024 * 1024) * 1000
+var MaxRate uint = (1024 * 1024) * 1000
 
 var blockSize = int64(1024)
 var capacity = int64(blockSize * 4)
@@ -149,11 +149,19 @@ type SlowListener struct {
 }
 
 // NewSlowListener creates a SlowListener with specified read and write rates.
-func NewSlowListener(listener net.Listener, readrate float64, writerate float64) net.Listener {
+// Both the readrate and the writerate are specified in bytes per second. A
+// value of 0 disables throttling.
+func NewSlowListener(listener net.Listener, readrate uint, writerate uint) net.Listener {
+	if readrate == 0 {
+		readrate = MaxRate
+	}
+	if writerate == 0 {
+		writerate = MaxRate
+	}
 	return &SlowListener{
 		listener:    listener,
-		readbucket:  ratelimit.NewBucketWithRate(readrate, capacity),
-		writebucket: ratelimit.NewBucketWithRate(writerate, capacity),
+		readbucket:  ratelimit.NewBucketWithRate(float64(readrate), capacity),
+		writebucket: ratelimit.NewBucketWithRate(float64(writerate), capacity),
 	}
 }
 
