@@ -1,3 +1,5 @@
+// Package timer adds HTTP request and response timing information to a
+// context.
 package timer
 
 import (

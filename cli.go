@@ -13,7 +13,6 @@ import (
 
 	"github.com/GeertJohan/go.rice"
 	"github.com/toqueteos/webbrowser"
-	"gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/livereload"
@@ -24,7 +23,8 @@ import (
 )
 
 const (
-	version  = "0.2"
+	// Version is the current version of devd
+	Version  = "0.2"
 	portLow  = 8000
 	portHigh = 10000
 )
@@ -152,172 +152,95 @@ func formatURL(tls bool, httpIP string, port int) string {
 	return fmt.Sprintf("%s://%s:%d", proto, host, port)
 }
 
-// CLI fires off the command-line interface
-func CLI() {
-	httpIP := kingpin.Flag("address", "Address to listen on").
-		Short('A').
-		Default("127.0.0.1").
-		String()
+// Devd represents the devd server options
+type Devd struct {
+	Routes      []string
+	OpenBrowser bool
+	CertFile    string
 
-	allInterfaces := kingpin.Flag("a", "Listen on all addresses").
-		Short('a').
-		Bool()
+	// Listening address
+	AllInterfaces bool
+	Address       string
+	Port          int
 
-	certFile := kingpin.Flag("cert", "Certificate bundle file - enables TLS").
-		Short('c').
-		PlaceHolder("PATH").
-		Default("").
-		ExistingFile()
+	// Shaping
+	Latency  int
+	DownKbps int
+	UpKbps   int
 
-	throttleDownKbps := kingpin.Flag(
-		"down",
-		"Throttle downstream from the client to N kilobytes per second",
-	).
-		PlaceHolder("N").
-		Short('d').
-		Default("0").
-		Int()
+	// Livereload
+	LivereloadRoutes bool
+	Watch            []string
+	Excludes         []string
 
-	logHeaders := kingpin.Flag("logheaders", "Log headers").
-		Short('H').
-		Default("false").
-		Bool()
+	// Logging
+	Debug       bool
+	LogHeaders  bool
+	EnableTimer bool
+	IgnoreLogs  []string
+}
 
-	ignoreHeaders := kingpin.Flag(
-		"ignore",
-		"Disable logging matching requests. Regexes are matched over 'host/path'",
-	).
-		Short('I').
-		PlaceHolder("REGEX").
-		Strings()
-
-	livereloadRoutes := kingpin.Flag("livereload", "Enable livereload for static files").
-		Short('l').
-		Default("false").
-		Bool()
-
-	latency := kingpin.Flag("latency", "Add N milliseconds of round-trip latency").
-		PlaceHolder("N").
-		Short('n').
-		Default("0").
-		Int()
-
-	openBrowser := kingpin.Flag("open", "Open browser window on startup").
-		Short('o').
-		Default("false").
-		Bool()
-
-	httpPort := kingpin.Flag(
-		"port",
-		"Port to listen on - if not specified, devd will auto-pick a sensible port",
-	).
-		Short('p').
-		Int()
-
-	enableTimer := kingpin.Flag("logtime", "Log timing").
-		Short('T').
-		Default("false").
-		Bool()
-
-	throttleUpKbps := kingpin.Flag(
-		"up",
-		"Throttle upstream from the client to N kilobytes per second",
-	).
-		PlaceHolder("N").
-		Short('u').
-		Default("0").
-		Int()
-
-	watch := kingpin.Flag("watch", "Watch path to trigger livereload").
-		PlaceHolder("PATH").
-		Short('w').
-		Strings()
-
-	debug := kingpin.Flag("debug", "Debugging for devd development").
-		Default("false").
-		Bool()
-
-	excludes := kingpin.Flag("exclude", "Glob pattern for files to exclude from livereload.").
-		PlaceHolder("PATTERN").
-		Short('x').
-		Strings()
-
-	routes := kingpin.Arg(
-		"route",
-		`Routes have the following forms:
-			[SUBDOMAIN]/<PATH>=<DIR>
-			[SUBDOMAIN]/<PATH>=<URL>
-			<DIR>
-			<URL>
-		`,
-	).Required().Strings()
-
-	kingpin.Version(version)
-
-	kingpin.Parse()
-
+// Serve starts the devd server
+func (dd *Devd) Serve() error {
 	logger := termlog.NewLog()
-
-	if *debug {
+	if dd.Debug {
 		logger.Enable("debug")
 	}
-	if *enableTimer {
+	if dd.EnableTimer {
 		logger.Enable("timer")
 	}
-	if *throttleDownKbps == 0 {
-		*throttleDownKbps = slowdown.MaxRate
+	if dd.DownKbps == 0 {
+		dd.DownKbps = slowdown.MaxRate
 	}
-	if *throttleUpKbps == 0 {
-		*throttleUpKbps = slowdown.MaxRate
+	if dd.UpKbps == 0 {
+		dd.UpKbps = slowdown.MaxRate
 	}
 
-	if *allInterfaces {
-		*httpIP = "0.0.0.0"
+	if dd.AllInterfaces {
+		dd.Address = "0.0.0.0"
 	}
 
 	tlsEnabled := false
-	if *certFile != "" {
+	if dd.CertFile != "" {
 		tlsEnabled = true
 	}
 
 	var hl net.Listener
 	var err error
-	if *httpPort > 0 {
-		hl, err = net.Listen("tcp", fmt.Sprintf("%v:%d", *httpIP, *httpPort))
+	if dd.Port > 0 {
+		hl, err = net.Listen("tcp", fmt.Sprintf("%v:%d", dd.Address, dd.Port))
 	} else {
-		hl, err = pickPort(*httpIP, portLow, portHigh, tlsEnabled)
+		hl, err = pickPort(dd.Address, portLow, portHigh, tlsEnabled)
 	}
 	if err != nil {
-		kingpin.Fatalf("Could not bind to port: %s", err)
-		return
+		return fmt.Errorf("Could not bind to port: %s", err)
 	}
 
 	templates := ricetemp.MustMakeTemplates(rice.MustFindBox("templates"))
 	if err != nil {
-		kingpin.Fatalf("Error loading templates: %s", err)
-		return
+		return fmt.Errorf("Error loading templates: %s", err)
 	}
 
 	ignores := make([]*regexp.Regexp, 0, 0)
-	for _, expr := range *ignoreHeaders {
+	for _, expr := range dd.IgnoreLogs {
 		v, err := regexp.Compile(expr)
 		if err != nil {
-			kingpin.Fatalf("%s", err)
+			return fmt.Errorf("%s", err)
 		}
 		ignores = append(ignores, v)
 	}
 
 	routeColl := make(RouteCollection)
-	for _, s := range *routes {
+	for _, s := range dd.Routes {
 		err := routeColl.Set(s)
 		if err != nil {
-			kingpin.FatalUsage("Invalid route specification: %s", err)
+			return fmt.Errorf("Invalid route specification: %s", err)
 		}
 	}
 
 	mux := http.NewServeMux()
 	var livereloadEnabled = false
-	if *livereloadRoutes || len(*watch) > 0 {
+	if dd.LivereloadRoutes || len(dd.Watch) > 0 {
 		livereloadEnabled = true
 	}
 
@@ -326,10 +249,10 @@ func CLI() {
 			logger,
 			route,
 			templates,
-			*logHeaders,
+			dd.LogHeaders,
 			ignores,
 			livereloadEnabled,
-			*latency,
+			dd.Latency,
 		)
 		mux.Handle(match, http.StripPrefix(route.Path, handler))
 	}
@@ -339,37 +262,36 @@ func CLI() {
 		mux.Handle("/livereload", lr)
 		mux.Handle("/livereload.js", http.HandlerFunc(lr.ServeScript))
 	}
-	if *livereloadRoutes {
+	if dd.LivereloadRoutes {
 		err = WatchRoutes(routeColl, lr)
 		if err != nil {
-			kingpin.Fatalf("Could not watch routes for livereload: %s", err)
+			return fmt.Errorf("Could not watch routes for livereload: %s", err)
 		}
 	}
-	if len(*watch) > 0 {
-		err = WatchPaths(*watch, *excludes, lr, logger)
+	if len(dd.Watch) > 0 {
+		err = WatchPaths(dd.Watch, dd.Excludes, lr, logger)
 		if err != nil {
-			kingpin.Fatalf("Could not watch path for livereload: %s", err)
+			return fmt.Errorf("Could not watch path for livereload: %s", err)
 		}
 	}
 
 	var tlsConfig *tls.Config
-	if *certFile != "" {
-		tlsConfig, err = getTLSConfig(*certFile)
+	if dd.CertFile != "" {
+		tlsConfig, err = getTLSConfig(dd.CertFile)
 		if err != nil {
-			kingpin.Fatalf("Could not load certs: %s", err)
-			return
+			return fmt.Errorf("Could not load certs: %s", err)
 		}
 		hl = tls.NewListener(hl, tlsConfig)
 	}
 	hl = slowdown.NewSlowListener(
 		hl,
-		float64(*throttleUpKbps)*1024,
-		float64(*throttleDownKbps)*1024,
+		float64(dd.UpKbps)*1024,
+		float64(dd.DownKbps)*1024,
 	)
 
-	url := formatURL(tlsEnabled, *httpIP, hl.Addr().(*net.TCPAddr).Port)
+	url := formatURL(tlsEnabled, dd.Address, hl.Addr().(*net.TCPAddr).Port)
 	logger.Say("Listening on %s (%s)", url, hl.Addr().String())
-	if *openBrowser {
+	if dd.OpenBrowser {
 		go func() {
 			webbrowser.Open(url)
 		}()
@@ -380,4 +302,5 @@ func CLI() {
 	}
 	err = server.Serve(hl)
 	logger.Shout("Server stopped: %v", err)
+	return nil
 }

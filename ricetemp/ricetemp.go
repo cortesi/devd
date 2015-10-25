@@ -1,5 +1,4 @@
-// ricetemp makes templates from a ricebox.
-
+// Package ricetemp makes templates from a ricebox.
 package ricetemp
 
 import (

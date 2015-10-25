@@ -1,3 +1,4 @@
+// Package httpctx provides a context-aware HTTP handler adaptor
 package httpctx
 
 import (

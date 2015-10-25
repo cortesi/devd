@@ -1,3 +1,5 @@
+// Package livereload allows HTML pages to be dynamically reloaded. It includes
+// both the server and client implementations required.
 package livereload
 
 import (

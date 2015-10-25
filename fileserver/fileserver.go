@@ -1,9 +1,6 @@
-// Copyright 2009 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-// HTTP file system request handler
-
+// Package fileserver provides a filesystem HTTP handler, based on the built-in
+// Go FileServer. Extensions include better directory listings, support for
+// injection, better and use of Context.
 package fileserver
 
 import (

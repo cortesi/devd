@@ -1,9 +1,6 @@
-// Copyright 2011 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-// HTTP reverse proxy handler
-
+// Package reverseproxy is a reverse proxy implementation based on the built-in
+// httuptil.Reverseproxy. Extensions include better logging and support for
+// injection.
 package reverseproxy
 
 import (

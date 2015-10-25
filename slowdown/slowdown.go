@@ -1,3 +1,5 @@
+// Package slowdown provides an implementation of net.Listener that limits
+// bandwidth.
 package slowdown
 
 import (
