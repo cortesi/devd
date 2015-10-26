@@ -77,7 +77,7 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 						strings.TrimPrefix(fpath, string(ep)),
 					)
 				}
-				files = filterFiles("", files, excludePatterns, log)
+				files = filterFiles("/", files, excludePatterns, log)
 				ch <- files
 			}
 		}()
@@ -87,7 +87,9 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 
 func liveEvents(lr Reloader, ch chan []string) {
 	for ei := range ch {
-		lr.Reload(ei)
+		if len(ei) > 0 {
+			lr.Reload(ei)
+		}
 	}
 }
 
@@ -95,14 +97,12 @@ func liveEvents(lr Reloader, ch chan []string) {
 func shouldInclude(file string, excludePatterns []string, log termlog.Logger) bool {
 	for _, pattern := range excludePatterns {
 		match, err := filepath.Match(pattern, file)
-
 		if err != nil {
-			log.Warn("Invalid pattern: `%s'", pattern)
+			log.Warn("Error matching pattern '%s': %s", pattern, err)
 		} else if match {
 			return false
 		}
 	}
-
 	return true
 }
 
