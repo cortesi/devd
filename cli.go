@@ -91,47 +91,6 @@ func matchStringAny(regexps []*regexp.Regexp, s string) bool {
 	return false
 }
 
-func devdHandler(log termlog.Logger, route Route, templates *template.Template, logHeaders bool, ignoreLogs []*regexp.Regexp, livereload bool, latency int) http.Handler {
-	ci := inject.CopyInject{}
-	if livereload {
-		ci = injectLivereload
-	}
-	next := route.Endpoint.Handler(templates, ci)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sublog := log.Group()
-		if matchStringAny(ignoreLogs, fmt.Sprintf("%s%s", route.Host, r.RequestURI)) {
-			sublog.Quiet()
-		}
-		timr := timer.Timer{}
-		defer func() {
-			timing := termlog.DefaultPalette.Timestamp.SprintFunc()("timing: ")
-			sublog.SayAs(
-				"timer",
-				timing+timr.String(),
-			)
-			sublog.Done()
-		}()
-		timr.RequestHeaders()
-		time.Sleep(time.Millisecond * time.Duration(latency))
-		sublog.Say("%s %s", r.Method, r.URL)
-		if logHeaders {
-			LogHeader(sublog, r.Header)
-		}
-		ctx := timr.NewContext(context.Background())
-		ctx = termlog.NewContext(ctx, sublog)
-		next.ServeHTTPContext(
-			ctx,
-			&ResponseLogWriter{
-				Log:        sublog,
-				Resp:       w,
-				Timer:      &timr,
-				LogHeaders: logHeaders,
-			},
-			r,
-		)
-	})
-}
-
 func formatURL(tls bool, httpIP string, port int) string {
 	proto := "http"
 	if tls {
@@ -171,26 +130,59 @@ type Devd struct {
 	Excludes         []string
 
 	// Logging
-	Quiet      bool
-	Debug      bool
-	LogHeaders bool
-	LogTime    bool
 	IgnoreLogs []string
 }
 
-// Serve starts the devd server
-func (dd *Devd) Serve() error {
-	logger := termlog.NewLog()
-	if dd.Quiet {
-		logger.Quiet()
+// RouteHandler handles a single route
+func (dd *Devd) RouteHandler(log termlog.Logger, route Route, templates *template.Template, ignoreLogs []*regexp.Regexp) http.Handler {
+	ci := inject.CopyInject{}
+	if dd.LivereloadEnabled() {
+		ci = injectLivereload
 	}
-	if dd.Debug {
-		logger.Enable("debug")
-	}
-	if dd.LogTime {
-		logger.Enable("timer")
-	}
+	next := route.Endpoint.Handler(templates, ci)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		timr := timer.Timer{}
+		sublog := log.Group()
+		defer func() {
+			timing := termlog.DefaultPalette.Timestamp.SprintFunc()("timing: ")
+			sublog.SayAs(
+				"timer",
+				timing+timr.String(),
+			)
+			sublog.Done()
+		}()
 
+		if matchStringAny(ignoreLogs, fmt.Sprintf("%s%s", route.Host, r.RequestURI)) {
+			sublog.Quiet()
+		}
+		timr.RequestHeaders()
+		time.Sleep(time.Millisecond * time.Duration(dd.Latency))
+		sublog.Say("%s %s", r.Method, r.URL)
+		LogHeader(sublog, r.Header)
+		ctx := timr.NewContext(context.Background())
+		ctx = termlog.NewContext(ctx, sublog)
+		next.ServeHTTPContext(
+			ctx,
+			&ResponseLogWriter{
+				Log:   sublog,
+				Resp:  w,
+				Timer: &timr,
+			},
+			r,
+		)
+	})
+}
+
+// LivereloadEnabled tells us if liverload is enabled
+func (dd *Devd) LivereloadEnabled() bool {
+	if dd.LivereloadRoutes || len(dd.Watch) > 0 {
+		return true
+	}
+	return false
+}
+
+// Serve starts the devd server
+func (dd *Devd) Serve(logger termlog.Logger) error {
 	templates, err := ricetemp.MakeTemplates(rice.MustFindBox("templates"))
 	if err != nil {
 		return fmt.Errorf("Error loading templates: %s", err)
@@ -214,26 +206,13 @@ func (dd *Devd) Serve() error {
 	}
 
 	mux := http.NewServeMux()
-	var livereloadEnabled = false
-	if dd.LivereloadRoutes || len(dd.Watch) > 0 {
-		livereloadEnabled = true
-	}
-
 	for match, route := range routeColl {
-		handler := devdHandler(
-			logger,
-			route,
-			templates,
-			dd.LogHeaders,
-			ignores,
-			livereloadEnabled,
-			dd.Latency,
-		)
+		handler := dd.RouteHandler(logger, route, templates, ignores)
 		mux.Handle(match, http.StripPrefix(route.Path, handler))
 	}
 
 	lr := livereload.NewServer("livereload", logger)
-	if livereloadEnabled {
+	if dd.LivereloadEnabled() {
 		mux.Handle("/livereload", lr)
 		mux.Handle("/livereload.js", http.HandlerFunc(lr.ServeScript))
 	}

@@ -19,7 +19,8 @@ func LogHeader(log termlog.Logger, h http.Header) {
 	for k, vals := range h {
 		for _, v := range vals {
 			pad := fmt.Sprintf(fmt.Sprintf("%%%ds", max-len(k)+1), " ")
-			log.Say(
+			log.SayAs(
+				"headers",
 				"\t%s%s%s",
 				color.BlueString(k)+":",
 				pad,

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/cortesi/devd"
+	"github.com/cortesi/devd/termlog"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -66,6 +67,11 @@ func main() {
 		Short('p').
 		Int()
 
+	quiet := kingpin.Flag("quiet", "Silence all logs").
+		Short('q').
+		Default("false").
+		Bool()
+
 	logTime := kingpin.Flag("logtime", "Log timing").
 		Short('T').
 		Default("false").
@@ -85,14 +91,14 @@ func main() {
 		Short('w').
 		Strings()
 
-	debug := kingpin.Flag("debug", "Debugging for devd development").
-		Default("false").
-		Bool()
-
-	excludes := kingpin.Flag("exclude", "Glob pattern for files to exclude from livereload.").
+	excludes := kingpin.Flag("exclude", "Glob pattern for files to exclude from livereload").
 		PlaceHolder("PATTERN").
 		Short('x').
 		Strings()
+
+	debug := kingpin.Flag("debug", "Debugging for devd development").
+		Default("false").
+		Bool()
 
 	routes := kingpin.Arg(
 		"route",
@@ -131,12 +137,24 @@ func main() {
 		Excludes:         *excludes,
 
 		// Logging
-		Debug:      *debug,
-		LogHeaders: *logHeaders,
-		LogTime:    *logTime,
 		IgnoreLogs: *ignoreLogs,
 	}
-	err := dd.Serve()
+
+	logger := termlog.NewLog()
+	if *quiet {
+		logger.Quiet()
+	}
+	if *debug {
+		logger.Enable("debug")
+	}
+	if *logTime {
+		logger.Enable("timer")
+	}
+	if *logHeaders {
+		logger.Enable("headers")
+	}
+
+	err := dd.Serve(logger)
 	if err != nil {
 		kingpin.Fatalf("%s", err)
 	}

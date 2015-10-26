@@ -16,7 +16,6 @@ type ResponseLogWriter struct {
 	Log         termlog.Logger
 	Resp        http.ResponseWriter
 	Timer       *timer.Timer
-	LogHeaders  bool
 	wroteHeader bool
 }
 
@@ -75,9 +74,7 @@ func (rl *ResponseLogWriter) Write(data []byte) (int, error) {
 func (rl *ResponseLogWriter) WriteHeader(code int) {
 	rl.wroteHeader = true
 	rl.logCode(code, http.StatusText(code))
-	if rl.LogHeaders {
-		LogHeader(rl.Log, rl.Resp.Header())
-	}
+	LogHeader(rl.Log, rl.Resp.Header())
 	rl.Timer.ResponseHeaders()
 	rl.Resp.WriteHeader(code)
 	rl.Timer.ResponseDone()

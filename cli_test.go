@@ -47,12 +47,34 @@ func fsEndpoint(s string) *filesystemEndpoint {
 	return e
 }
 
-func TestDevdHandler(t *testing.T) {
+func TestDevdRouteHandler(t *testing.T) {
 	logger := termlog.NewLog()
 	logger.Quiet()
 	r := Route{"", "/", fsEndpoint("./testdata")}
 	templates := ricetemp.MustMakeTemplates(rice.MustFindBox("templates"))
-	h := devdHandler(logger, r, templates, true, nil, true, 0)
+
+	devd := Devd{
+		Routes:      make([]string, 0, 0),
+		OpenBrowser: false,
+		CertFile:    "",
+		Address:     "",
+		Port:        0,
+
+		// Shaping
+		Latency:  0,
+		DownKbps: 0,
+		UpKbps:   0,
+
+		// Livereload
+		LivereloadRoutes: false,
+		Watch:            make([]string, 0, 0),
+		Excludes:         make([]string, 0, 0),
+
+		// Logging
+		IgnoreLogs: make([]string, 0, 0),
+	}
+
+	h := devd.RouteHandler(logger, r, templates, nil)
 	ht := handlerTester{t, h}
 
 	AssertCode(t, ht.Request("GET", "/", nil), 200)
