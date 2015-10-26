@@ -37,8 +37,6 @@ var (
 	}
 )
 
-var ()
-
 func pickPort(addr string, low int, high int, tls bool) (net.Listener, error) {
 	firstTry := 80
 	if tls {

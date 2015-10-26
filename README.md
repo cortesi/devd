@@ -71,6 +71,12 @@ running application:
 
 <pre class="terminal">devd -w ./src http://localhost:8888</pre>
 
+The **-x** flag excludes files from triggering livereload based on a [pattern
+specification](#excluding-files-from-livereload). The following command
+disables livereload for all files with the ".less" extension:
+
+<pre class="terminal">devd -x "**.less" -l .</pre>
+
 
 ### Reverse proxy + static file server + flexible routing
 
@@ -165,3 +171,23 @@ Similarly, a simple reverse proxy can be started like this:
 ```
 devd http://localhost:8888
 ```
+
+## Excluding files from livereload
+
+The **-x** flag supports the following terms:
+
+Term          | Meaning
+------------- | -------
+`*`           | matches any sequence of non-path-separators
+`**`          | matches any sequence of characters, including path separators
+`?`           | matches any single non-path-separator character
+`[class]`     | matches any single non-path-separator character against a class of characters
+`{alt1,...}`  | matches a sequence of characters if one of the comma-separated alternatives matches
+
+Any character with a special meaning can be escaped with a backslash (`\`). Character classes support the following:
+
+Class      | Meaning
+---------- | -------
+`[abc]`    | matches any single character within the set
+`[a-z]`    | matches any single character in the range
+`[^class]` | matches any single character which does *not* match the class

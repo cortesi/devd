@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rjeczalik/notify"
-
+	"github.com/bmatcuk/doublestar"
 	"github.com/cortesi/devd/termlog"
+	"github.com/rjeczalik/notify"
 )
 
 // Reloader triggers a reload
@@ -96,7 +96,7 @@ func liveEvents(lr Reloader, ch chan []string) {
 // Determine if a file should be included, based on the given exclude paths.
 func shouldInclude(file string, excludePatterns []string, log termlog.Logger) bool {
 	for _, pattern := range excludePatterns {
-		match, err := filepath.Match(pattern, file)
+		match, err := doublestar.Match(pattern, file)
 		if err != nil {
 			log.Warn("Error matching pattern '%s': %s", pattern, err)
 		} else if match {

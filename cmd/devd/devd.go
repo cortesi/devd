@@ -12,7 +12,7 @@ func main() {
 		Default("127.0.0.1").
 		String()
 
-	allInterfaces := kingpin.Flag("a", "Listen on all addresses").
+	allInterfaces := kingpin.Flag("all", "Listen on all addresses").
 		Short('a').
 		Bool()
 
