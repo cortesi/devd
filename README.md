@@ -88,7 +88,7 @@ add throttling and latency simulation to existing services, and so forth.
 Here's a more complicated example showing how all this ties together - it
 overlays two applications and a tree of static files. Livereload is enabled for
 the static files (**-l**) and also triggered whenever source files for reverse
-proxied apps change:
+proxied apps change (**-w**):
 
 <pre class="terminal">
 devd -l \
@@ -98,6 +98,7 @@ devd -l \
 /static/=./assets
 </pre>
 
+The [route specification syntax](#routes) is compact but powerful enough to cater for most use cases.
 
 ### Light-weight virtual hosting
 
