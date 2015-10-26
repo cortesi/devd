@@ -31,10 +31,11 @@ var filterFilesTests = []struct {
 }
 
 func TestFilterFiles(t *testing.T) {
-	logger := termlog.DummyLogger{}
+	logger := termlog.NewLog()
+	logger.Quiet()
 
 	for i, tt := range filterFilesTests {
-		result := filterFiles("", tt.files, []string{tt.pattern}, &logger)
+		result := filterFiles("", tt.files, []string{tt.pattern}, logger)
 		err := false
 
 		if len(result) != len(tt.expected) {

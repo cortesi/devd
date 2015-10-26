@@ -85,41 +85,9 @@ type Logger interface {
 	ShoutAs(name string, format string, args ...interface{})
 
 	Done()
+	Quiet()
 	Group() Logger
 }
-
-// DummyLogger obeys the Logger interface, but does nothing
-type DummyLogger struct{}
-
-// Say obeys the Logger interface, but does nothing
-func (DummyLogger) Say(format string, args ...interface{}) {}
-
-// Notice obeys the Logger interface, but does nothing
-func (DummyLogger) Notice(format string, args ...interface{}) {}
-
-// Warn obeys the Logger interface, but does nothing
-func (DummyLogger) Warn(format string, args ...interface{}) {}
-
-// Shout obeys the Logger interface, but does nothing
-func (DummyLogger) Shout(format string, args ...interface{}) {}
-
-// SayAs obeys the Logger interface, but does nothing
-func (DummyLogger) SayAs(name string, format string, args ...interface{}) {}
-
-// NoticeAs obeys the Logger interface, but does nothing
-func (DummyLogger) NoticeAs(name string, format string, args ...interface{}) {}
-
-// WarnAs obeys the Logger interface, but does nothing
-func (DummyLogger) WarnAs(name string, format string, args ...interface{}) {}
-
-// ShoutAs obeys the Logger interface, but does nothing
-func (DummyLogger) ShoutAs(name string, format string, args ...interface{}) {}
-
-// Done obeys the Logger interface, but does nothing
-func (DummyLogger) Done() {}
-
-// Group obeys the Logger interface, but does nothing
-func (l DummyLogger) Group() Logger { return l }
 
 type line struct {
 	name   string
@@ -166,8 +134,8 @@ func (l *Log) Quiet() {
 
 // Log with a specified log level. A line is printed if the log level is >= the
 // cutoff
-func (l *Log) output(lines ...*line) {
-	if l.quiet {
+func (l *Log) output(quiet bool, lines ...*line) {
+	if quiet {
 		return
 	}
 	l.mu.Lock()
@@ -195,42 +163,42 @@ func (l *Log) output(lines ...*line) {
 
 // Say logs a line
 func (l *Log) Say(format string, args ...interface{}) {
-	l.output(&line{"", l.Palette.Say, format, args})
+	l.output(l.quiet, &line{"", l.Palette.Say, format, args})
 }
 
 // Notice logs a line with the Notice color
 func (l *Log) Notice(format string, args ...interface{}) {
-	l.output(&line{"", l.Palette.Notice, format, args})
+	l.output(l.quiet, &line{"", l.Palette.Notice, format, args})
 }
 
 // Warn logs a line with the Warn color
 func (l *Log) Warn(format string, args ...interface{}) {
-	l.output(&line{"", l.Palette.Warn, format, args})
+	l.output(l.quiet, &line{"", l.Palette.Warn, format, args})
 }
 
 // Shout logs a line with the Shout color
 func (l *Log) Shout(format string, args ...interface{}) {
-	l.output(&line{"", l.Palette.Shout, format, args})
+	l.output(l.quiet, &line{"", l.Palette.Shout, format, args})
 }
 
 // SayAs logs a line
 func (l *Log) SayAs(name string, format string, args ...interface{}) {
-	l.output(&line{name, l.Palette.Say, format, args})
+	l.output(l.quiet, &line{name, l.Palette.Say, format, args})
 }
 
 // NoticeAs logs a line with the Notice color
 func (l *Log) NoticeAs(name string, format string, args ...interface{}) {
-	l.output(&line{name, l.Palette.Notice, format, args})
+	l.output(l.quiet, &line{name, l.Palette.Notice, format, args})
 }
 
 // WarnAs logs a line with the Warn color
 func (l *Log) WarnAs(name string, format string, args ...interface{}) {
-	l.output(&line{name, l.Palette.Warn, format, args})
+	l.output(l.quiet, &line{name, l.Palette.Warn, format, args})
 }
 
 // ShoutAs logs a line with the Shout color
 func (l *Log) ShoutAs(name string, format string, args ...interface{}) {
-	l.output(&line{name, l.Palette.Shout, format, args})
+	l.output(l.quiet, &line{name, l.Palette.Shout, format, args})
 }
 
 // Group creates a new log group
@@ -239,6 +207,7 @@ func (l *Log) Group() Logger {
 		palette: l.Palette,
 		lines:   make([]*line, 0),
 		log:     l,
+		quiet:   l.quiet,
 	}
 }
 
@@ -253,6 +222,7 @@ type Group struct {
 	palette *Palette
 	lines   []*line
 	log     *Log
+	quiet   bool
 }
 
 func (g *Group) addLine(name string, color *color.Color, format string, args []interface{}) {
@@ -301,7 +271,12 @@ func (g *Group) ShoutAs(name string, format string, args ...interface{}) {
 
 // Done outputs the group to screen
 func (g *Group) Done() {
-	g.log.output(g.lines...)
+	g.log.output(g.quiet, g.lines...)
+}
+
+// Quiet disables output for this subgroup
+func (g *Group) Quiet() {
+	g.quiet = true
 }
 
 // Group of a group is just same group
@@ -318,7 +293,9 @@ func NewContext(ctx context.Context, logger Logger) context.Context {
 func FromContext(ctx context.Context) Logger {
 	logger, ok := ctx.Value("termlog").(Logger)
 	if !ok {
-		return DummyLogger{}
+		l := NewLog()
+		l.Quiet()
+		return l
 	}
 	return logger
 }

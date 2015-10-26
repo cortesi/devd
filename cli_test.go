@@ -48,10 +48,11 @@ func fsEndpoint(s string) *filesystemEndpoint {
 }
 
 func TestDevdHandler(t *testing.T) {
-	logger := termlog.DummyLogger{}
+	logger := termlog.NewLog()
+	logger.Quiet()
 	r := Route{"", "/", fsEndpoint("./testdata")}
 	templates := ricetemp.MustMakeTemplates(rice.MustFindBox("templates"))
-	h := devdHandler(&logger, r, templates, true, nil, true, 0)
+	h := devdHandler(logger, r, templates, true, nil, true, 0)
 	ht := handlerTester{t, h}
 
 	AssertCode(t, ht.Request("GET", "/", nil), 200)

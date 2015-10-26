@@ -35,7 +35,8 @@ import (
 // ServeFile replies to the request with the contents of the named file or directory.
 func ServeFile(w http.ResponseWriter, r *http.Request, name string) {
 	dir, file := filepath.Split(name)
-	logger := termlog.DummyLogger{}
+	logger := termlog.NewLog()
+	logger.Quiet()
 
 	fs := FileServer{
 		http.Dir(dir),

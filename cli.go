@@ -91,18 +91,16 @@ func matchStringAny(regexps []*regexp.Regexp, s string) bool {
 	return false
 }
 
-func devdHandler(log termlog.Logger, route Route, templates *template.Template, logHeaders bool, ignoreHeaders []*regexp.Regexp, livereload bool, latency int) http.Handler {
+func devdHandler(log termlog.Logger, route Route, templates *template.Template, logHeaders bool, ignoreLogs []*regexp.Regexp, livereload bool, latency int) http.Handler {
 	ci := inject.CopyInject{}
 	if livereload {
 		ci = injectLivereload
 	}
 	next := route.Endpoint.Handler(templates, ci)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var sublog termlog.Logger
-		if matchStringAny(ignoreHeaders, fmt.Sprintf("%s%s", route.Host, r.RequestURI)) {
-			sublog = termlog.DummyLogger{}
-		} else {
-			sublog = log.Group()
+		sublog := log.Group()
+		if matchStringAny(ignoreLogs, fmt.Sprintf("%s%s", route.Host, r.RequestURI)) {
+			sublog.Quiet()
 		}
 		timr := timer.Timer{}
 		defer func() {
