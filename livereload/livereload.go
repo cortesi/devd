@@ -4,10 +4,12 @@ package livereload
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 
 	"github.com/GeertJohan/go.rice"
+	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/termlog"
 	"github.com/gorilla/websocket"
 )
@@ -15,7 +17,18 @@ import (
 const (
 	cmdPage = "page"
 	cmdCSS  = "css"
+	// EndpointPath is the path to the websocket endpoint
+	EndpointPath = "/.devd.livereload"
+	// ScriptPath is the path to the livereload JavaScript asset
+	ScriptPath = "/.devd.livereload.js"
 )
+
+// Injector for the livereload script
+var Injector = inject.CopyInject{
+	Within:  1024 * 5,
+	Marker:  regexp.MustCompile(`<\/head>`),
+	Payload: []byte(`<script src="/.devd.livereload.js"></script>`),
+}
 
 // Server implements a Livereload server
 type Server struct {

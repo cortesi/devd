@@ -29,14 +29,6 @@ const (
 	portHigh = 10000
 )
 
-var (
-	injectLivereload = inject.CopyInject{
-		Within:  1024 * 5,
-		Marker:  regexp.MustCompile(`<\/head>`),
-		Payload: []byte(`<script src="/livereload.js"></script>`),
-	}
-)
-
 func pickPort(addr string, low int, high int, tls bool) (net.Listener, error) {
 	firstTry := 80
 	if tls {
@@ -135,7 +127,7 @@ type Devd struct {
 func (dd *Devd) RouteHandler(log termlog.Logger, route Route, templates *template.Template, ignoreLogs []*regexp.Regexp) http.Handler {
 	ci := inject.CopyInject{}
 	if dd.LivereloadEnabled() {
-		ci = injectLivereload
+		ci = livereload.Injector
 	}
 	next := route.Endpoint.Handler(templates, ci)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -211,8 +203,8 @@ func (dd *Devd) Serve(logger termlog.Logger) error {
 
 	lr := livereload.NewServer("livereload", logger)
 	if dd.LivereloadEnabled() {
-		mux.Handle("/livereload", lr)
-		mux.Handle("/livereload.js", http.HandlerFunc(lr.ServeScript))
+		mux.Handle(livereload.EndpointPath, lr)
+		mux.Handle(livereload.ScriptPath, http.HandlerFunc(lr.ServeScript))
 	}
 	if dd.LivereloadRoutes {
 		err = WatchRoutes(routeColl, lr, dd.Excludes, logger)

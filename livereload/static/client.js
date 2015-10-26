@@ -275,7 +275,7 @@
 
 
 (function() {
-    ws = new ReconnectingWebSocket("ws://" + window.location.host + "/livereload")
+    ws = new ReconnectingWebSocket("ws://" + window.location.host + "/.devd.livereload")
     ws.onmessage = function(event) {
         if (event.data == "page") {
             location.reload();
