@@ -173,6 +173,7 @@ type Devd struct {
 	Excludes         []string
 
 	// Logging
+	Quiet      bool
 	Debug      bool
 	LogHeaders bool
 	LogTime    bool
@@ -182,6 +183,9 @@ type Devd struct {
 // Serve starts the devd server
 func (dd *Devd) Serve() error {
 	logger := termlog.NewLog()
+	if dd.Quiet {
+		logger.Quiet()
+	}
 	if dd.Debug {
 		logger.Enable("debug")
 	}
@@ -236,7 +240,7 @@ func (dd *Devd) Serve() error {
 		mux.Handle("/livereload.js", http.HandlerFunc(lr.ServeScript))
 	}
 	if dd.LivereloadRoutes {
-		err = WatchRoutes(routeColl, lr)
+		err = WatchRoutes(routeColl, lr, dd.Excludes, logger)
 		if err != nil {
 			return fmt.Errorf("Could not watch routes for livereload: %s", err)
 		}

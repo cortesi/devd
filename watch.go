@@ -60,7 +60,7 @@ func watch(p string, ch chan notify.EventInfo) error {
 }
 
 // Watch watches an endpoint for changes, if it supports them.
-func (r Route) Watch(ch chan []string) error {
+func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Logger) error {
 	switch r.Endpoint.(type) {
 	case *filesystemEndpoint:
 		ep := *r.Endpoint.(*filesystemEndpoint)
@@ -77,6 +77,7 @@ func (r Route) Watch(ch chan []string) error {
 						strings.TrimPrefix(fpath, string(ep)),
 					)
 				}
+				files = filterFiles("", files, excludePatterns, log)
 				ch <- files
 			}
 		}()
@@ -157,10 +158,10 @@ func WatchPaths(paths, excludePatterns []string, reloader Reloader, log termlog.
 }
 
 // WatchRoutes watches the route collection, and broadcasts changes through reloader.
-func WatchRoutes(routes RouteCollection, reloader Reloader) error {
+func WatchRoutes(routes RouteCollection, reloader Reloader, excludePatterns []string, log termlog.Logger) error {
 	c := make(chan []string, 1)
 	for i := range routes {
-		err := routes[i].Watch(c)
+		err := routes[i].Watch(c, excludePatterns, log)
 		if err != nil {
 			return err
 		}

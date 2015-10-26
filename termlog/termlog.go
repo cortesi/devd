@@ -133,6 +133,7 @@ type Log struct {
 	mu      sync.Mutex
 	Palette *Palette
 	enabled map[string]bool
+	quiet   bool
 }
 
 // NewLog creates a new Log instance
@@ -158,9 +159,17 @@ func (l *Log) Enable(name string) {
 	l.enabled[name] = true
 }
 
+// Quiet disables all output
+func (l *Log) Quiet() {
+	l.quiet = true
+}
+
 // Log with a specified log level. A line is printed if the log level is >= the
 // cutoff
 func (l *Log) output(lines ...*line) {
+	if l.quiet {
+		return
+	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if len(lines) == 0 {
