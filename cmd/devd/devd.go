@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/cortesi/devd"
 	"github.com/cortesi/devd/termlog"
+	"github.com/toqueteos/webbrowser"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -120,12 +121,6 @@ func main() {
 	}
 
 	dd := devd.Devd{
-		Routes:      *routes,
-		OpenBrowser: *openBrowser,
-		CertFile:    *certFile,
-		Address:     realAddr,
-		Port:        *port,
-
 		// Shaping
 		Latency:  *latency,
 		DownKbps: *downKbps,
@@ -133,11 +128,16 @@ func main() {
 
 		// Livereload
 		LivereloadRoutes: *livereloadRoutes,
-		Watch:            *watch,
+		WatchPaths:       *watch,
 		Excludes:         *excludes,
+	}
 
-		// Logging
-		IgnoreLogs: *ignoreLogs,
+	if err := dd.AddRoutes(*routes); err != nil {
+		kingpin.Fatalf("%s", err)
+	}
+
+	if err := dd.AddIgnores(*ignoreLogs); err != nil {
+		kingpin.Fatalf("%s", err)
 	}
 
 	logger := termlog.NewLog()
@@ -154,7 +154,17 @@ func main() {
 		logger.Enable("headers")
 	}
 
-	err := dd.Serve(logger)
+	err := dd.Serve(
+		realAddr,
+		*port,
+		*certFile,
+		logger,
+		func(url string) {
+			if *openBrowser {
+				webbrowser.Open(url)
+			}
+		},
+	)
 	if err != nil {
 		kingpin.Fatalf("%s", err)
 	}

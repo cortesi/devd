@@ -12,7 +12,6 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/GeertJohan/go.rice"
-	"github.com/toqueteos/webbrowser"
 
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/livereload"
@@ -101,13 +100,7 @@ func formatURL(tls bool, httpIP string, port int) string {
 
 // Devd represents the devd server options
 type Devd struct {
-	Routes      []string
-	OpenBrowser bool
-	CertFile    string
-
-	// Listening address
-	Address string
-	Port    int
+	Routes RouteCollection
 
 	// Shaping
 	Latency  int
@@ -116,21 +109,21 @@ type Devd struct {
 
 	// Livereload
 	LivereloadRoutes bool
-	Watch            []string
+	WatchPaths       []string
 	Excludes         []string
 
 	// Logging
-	IgnoreLogs []string
+	IgnoreLogs []*regexp.Regexp
 }
 
 // RouteHandler handles a single route
-func (dd *Devd) RouteHandler(log termlog.Logger, route Route, templates *template.Template, ignoreLogs []*regexp.Regexp) http.Handler {
+func (dd *Devd) RouteHandler(log termlog.Logger, route Route, templates *template.Template) http.Handler {
 	ci := inject.CopyInject{}
-	if dd.LivereloadEnabled() {
+	if dd.HasLivereload() {
 		ci = livereload.Injector
 	}
 	next := route.Endpoint.Handler(templates, ci)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		timr := timer.Timer{}
 		sublog := log.Group()
 		defer func() {
@@ -142,7 +135,7 @@ func (dd *Devd) RouteHandler(log termlog.Logger, route Route, templates *templat
 			sublog.Done()
 		}()
 
-		if matchStringAny(ignoreLogs, fmt.Sprintf("%s%s", route.Host, r.RequestURI)) {
+		if matchStringAny(dd.IgnoreLogs, fmt.Sprintf("%s%s", route.Host, r.RequestURI)) {
 			sublog.Quiet()
 		}
 		timr.RequestHeaders()
@@ -161,99 +154,108 @@ func (dd *Devd) RouteHandler(log termlog.Logger, route Route, templates *templat
 			r,
 		)
 	})
+	return http.StripPrefix(route.Path, h)
 }
 
-// LivereloadEnabled tells us if liverload is enabled
-func (dd *Devd) LivereloadEnabled() bool {
-	if dd.LivereloadRoutes || len(dd.Watch) > 0 {
+// HasLivereload tells us if liverload is enabled
+func (dd *Devd) HasLivereload() bool {
+	if dd.LivereloadRoutes || len(dd.WatchPaths) > 0 {
 		return true
 	}
 	return false
 }
 
-// Serve starts the devd server
-func (dd *Devd) Serve(logger termlog.Logger) error {
-	templates, err := ricetemp.MakeTemplates(rice.MustFindBox("templates"))
-	if err != nil {
-		return fmt.Errorf("Error loading templates: %s", err)
-	}
-
-	ignores := make([]*regexp.Regexp, 0, 0)
-	for _, expr := range dd.IgnoreLogs {
-		v, err := regexp.Compile(expr)
-		if err != nil {
-			return fmt.Errorf("%s", err)
-		}
-		ignores = append(ignores, v)
-	}
-
-	routeColl := make(RouteCollection)
-	for _, s := range dd.Routes {
-		err := routeColl.Set(s)
+// AddRoutes adds route specifications to the server
+func (dd *Devd) AddRoutes(specs []string) error {
+	dd.Routes = make(RouteCollection)
+	for _, s := range specs {
+		err := dd.Routes.Add(s)
 		if err != nil {
 			return fmt.Errorf("Invalid route specification: %s", err)
 		}
 	}
+	return nil
+}
 
-	mux := http.NewServeMux()
-	for match, route := range routeColl {
-		handler := dd.RouteHandler(logger, route, templates, ignores)
-		mux.Handle(match, http.StripPrefix(route.Path, handler))
+// AddIgnores adds log ignore patterns to the server
+func (dd *Devd) AddIgnores(specs []string) error {
+	dd.IgnoreLogs = make([]*regexp.Regexp, 0, 0)
+	for _, expr := range specs {
+		v, err := regexp.Compile(expr)
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
+		dd.IgnoreLogs = append(dd.IgnoreLogs, v)
 	}
+	return nil
+}
 
-	lr := livereload.NewServer("livereload", logger)
-	if dd.LivereloadEnabled() {
+// Handler construc5ts the Devd handler
+func (dd *Devd) Handler(logger termlog.Logger, templates *template.Template) (http.Handler, error) {
+	mux := http.NewServeMux()
+	for match, route := range dd.Routes {
+		mux.Handle(match, dd.RouteHandler(logger, route, templates))
+	}
+	if dd.HasLivereload() {
+		lr := livereload.NewServer("livereload", logger)
 		mux.Handle(livereload.EndpointPath, lr)
 		mux.Handle(livereload.ScriptPath, http.HandlerFunc(lr.ServeScript))
-	}
-	if dd.LivereloadRoutes {
-		err = WatchRoutes(routeColl, lr, dd.Excludes, logger)
-		if err != nil {
-			return fmt.Errorf("Could not watch routes for livereload: %s", err)
+		if dd.LivereloadRoutes {
+			err := WatchRoutes(dd.Routes, lr, dd.Excludes, logger)
+			if err != nil {
+				return nil, fmt.Errorf("Could not watch routes for livereload: %s", err)
+			}
+		}
+		if len(dd.WatchPaths) > 0 {
+			err := WatchPaths(dd.WatchPaths, dd.Excludes, lr, logger)
+			if err != nil {
+				return nil, fmt.Errorf("Could not watch path for livereload: %s", err)
+			}
 		}
 	}
-	if len(dd.Watch) > 0 {
-		err = WatchPaths(dd.Watch, dd.Excludes, lr, logger)
+	return hostPortStrip(mux), nil
+}
+
+// Serve starts the devd server. The callback is called with the serving URL
+// just before service starts.
+func (dd *Devd) Serve(address string, port int, certFile string, logger termlog.Logger, callback func(string)) error {
+	templates, err := ricetemp.MakeTemplates(rice.MustFindBox("templates"))
+	if err != nil {
+		return fmt.Errorf("Error loading templates: %s", err)
+	}
+	mux, err := dd.Handler(logger, templates)
+	if err != nil {
+		return err
+	}
+	var tlsConfig *tls.Config
+	var tlsEnabled bool
+	if certFile != "" {
+		tlsConfig, err = getTLSConfig(certFile)
 		if err != nil {
-			return fmt.Errorf("Could not watch path for livereload: %s", err)
+			return fmt.Errorf("Could not load certs: %s", err)
 		}
+		tlsEnabled = true
 	}
 
 	var hl net.Listener
-	tlsEnabled := false
-	if dd.CertFile != "" {
-		tlsEnabled = true
-	}
-	if dd.Port > 0 {
-		hl, err = net.Listen("tcp", fmt.Sprintf("%v:%d", dd.Address, dd.Port))
+	if port > 0 {
+		hl, err = net.Listen("tcp", fmt.Sprintf("%v:%d", address, port))
 	} else {
-		hl, err = pickPort(dd.Address, portLow, portHigh, tlsEnabled)
+		hl, err = pickPort(address, portLow, portHigh, tlsEnabled)
 	}
 	if err != nil {
 		return fmt.Errorf("Could not bind to port: %s", err)
 	}
 
-	var tlsConfig *tls.Config
-	if dd.CertFile != "" {
-		tlsConfig, err = getTLSConfig(dd.CertFile)
-		if err != nil {
-			return fmt.Errorf("Could not load certs: %s", err)
-		}
+	if tlsConfig != nil {
 		hl = tls.NewListener(hl, tlsConfig)
 	}
-	hl = slowdown.NewSlowListener(hl, dd.UpKbps*1024, dd.DownKbps*1024)
 
-	url := formatURL(tlsEnabled, dd.Address, hl.Addr().(*net.TCPAddr).Port)
+	hl = slowdown.NewSlowListener(hl, dd.UpKbps*1024, dd.DownKbps*1024)
+	url := formatURL(tlsEnabled, address, hl.Addr().(*net.TCPAddr).Port)
 	logger.Say("Listening on %s (%s)", url, hl.Addr().String())
-	if dd.OpenBrowser {
-		go func() {
-			webbrowser.Open(url)
-		}()
-	}
-	server := &http.Server{
-		Addr:    hl.Addr().String(),
-		Handler: hostPortStrip(mux),
-	}
+	server := &http.Server{Addr: hl.Addr().String(), Handler: mux}
+	callback(url)
 	err = server.Serve(hl)
 	logger.Shout("Server stopped: %v", err)
 	return nil

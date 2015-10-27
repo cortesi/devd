@@ -133,8 +133,8 @@ func (f *RouteCollection) String() string {
 	return fmt.Sprintf("%v", *f)
 }
 
-// Set adds a route to the collection
-func (f RouteCollection) Set(value string) error {
+// Add a route to the collection
+func (f RouteCollection) Add(value string) error {
 	s, err := newRoute(value)
 	if err != nil {
 		return err

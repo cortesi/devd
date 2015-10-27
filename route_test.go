@@ -157,21 +157,21 @@ func TestRouteHandler(t *testing.T) {
 func TestRouteCollection(t *testing.T) {
 	var m = make(RouteCollection)
 	m.String()
-	err := m.Set("foo=bar")
+	err := m.Add("foo=bar")
 	if err != nil {
 		t.Error(err)
 	}
-	err = m.Set("foo")
+	err = m.Add("foo")
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = m.Set("xxx=bar")
+	err = m.Add("xxx=bar")
 	if err != nil {
 		t.Errorf("Set error: %s", err)
 	}
 
-	err = m.Set("xxx=bar")
+	err = m.Add("xxx=bar")
 	if err == nil {
 		t.Errorf("Expected error, got: %s", m)
 	}
