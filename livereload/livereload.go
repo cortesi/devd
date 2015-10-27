@@ -14,6 +14,12 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Reloader triggers a reload
+type Reloader interface {
+	Reload(paths []string)
+	Watch(ch chan []string)
+}
+
 const (
 	cmdPage = "page"
 	cmdCSS  = "css"
@@ -109,6 +115,15 @@ func (s *Server) Reload(paths []string) {
 	}
 	s.logger.SayAs("debug", "livereload %s, files changed: %s", cmd, paths)
 	s.broadcast <- cmd
+}
+
+// Watch montors a channel of lists of paths for reload requests
+func (s *Server) Watch(ch chan []string) {
+	for ei := range ch {
+		if len(ei) > 0 {
+			s.Reload(ei)
+		}
+	}
 }
 
 // ServeScript is a handler function that serves the livereload JavaScript file

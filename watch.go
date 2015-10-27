@@ -8,47 +8,43 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar"
+	"github.com/cortesi/devd/livereload"
 	"github.com/cortesi/devd/termlog"
 	"github.com/rjeczalik/notify"
 )
-
-// Reloader triggers a reload
-type Reloader interface {
-	Reload(paths []string)
-}
 
 const batchTime = time.Millisecond * 200
 
 // This function batches events up, and emits just a list of paths for files
 // considered changed. It applies some heuristics to deal with short-lived
 // temporary files.
-func batch(ch chan notify.EventInfo) chan []string {
+func batch(batchTime time.Duration, ch chan string) chan []string {
 	ret := make(chan []string)
 	go func() {
 		emap := make(map[string]bool)
 		for {
 			select {
-			case evt := <-ch:
-				emap[evt.Path()] = true
+			case path := <-ch:
+				emap[path] = true
 			case <-time.After(batchTime):
-				if len(emap) > 0 {
-					keys := make([]string, 0, len(emap))
-					for k := range emap {
-						_, err := os.Stat(k)
-						if err == nil {
-							keys = append(keys, k)
-						}
+				keys := make([]string, 0, len(emap))
+				for k := range emap {
+					_, err := os.Stat(k)
+					if err == nil {
+						keys = append(keys, k)
 					}
-					ret <- keys
-					emap = make(map[string]bool)
 				}
+				if len(keys) > 0 {
+					ret <- keys
+				}
+				emap = make(map[string]bool)
 			}
 		}
 	}()
 	return ret
 }
 
-func watch(p string, ch chan notify.EventInfo) error {
+func watch(p string, ch chan string) error {
 	stat, err := os.Stat(p)
 	if err != nil {
 		return err
@@ -56,7 +52,16 @@ func watch(p string, ch chan notify.EventInfo) error {
 	if stat.IsDir() {
 		p = path.Join(p, "...")
 	}
-	return notify.Watch(p, ch, notify.All)
+	evtch := make(chan notify.EventInfo)
+	err = notify.Watch(p, evtch, notify.All)
+	if err == nil {
+		go func() {
+			for e := range evtch {
+				ch <- e.Path()
+			}
+		}()
+	}
+	return err
 }
 
 // Watch watches an endpoint for changes, if it supports them.
@@ -64,13 +69,13 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 	switch r.Endpoint.(type) {
 	case *filesystemEndpoint:
 		ep := *r.Endpoint.(*filesystemEndpoint)
-		evtchan := make(chan notify.EventInfo, 1)
-		err := watch(string(ep), evtchan)
+		pathchan := make(chan string, 1)
+		err := watch(string(ep), pathchan)
 		if err != nil {
 			return err
 		}
 		go func() {
-			for files := range batch(evtchan) {
+			for files := range batch(batchTime, pathchan) {
 				for i, fpath := range files {
 					files[i] = path.Join(
 						r.Path,
@@ -83,14 +88,6 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 		}()
 	}
 	return nil
-}
-
-func liveEvents(lr Reloader, ch chan []string) {
-	for ei := range ch {
-		if len(ei) > 0 {
-			lr.Reload(ei)
-		}
-	}
 }
 
 // Determine if a file should be included, based on the given exclude paths.
@@ -108,24 +105,18 @@ func shouldInclude(file string, excludePatterns []string, log termlog.Logger) bo
 
 // Filter out the files that match the given exclude patterns.
 func filterFiles(pathPrefix string, files, excludePatterns []string, log termlog.Logger) []string {
-	if len(excludePatterns) > 0 {
-		i := 0
-		for j, file := range files {
-			relFile := strings.TrimPrefix(file, pathPrefix)
-			if shouldInclude(relFile, excludePatterns, log) {
-				if i != j {
-					files[i] = file
-				}
-				i++
-			}
+	ret := []string{}
+	for _, file := range files {
+		relFile := strings.TrimPrefix(file, pathPrefix)
+		if shouldInclude(relFile, excludePatterns, log) {
+			ret = append(ret, file)
 		}
-		return files[:i]
 	}
-	return files
+	return ret
 }
 
 // WatchPaths watches a set of paths, and broadcasts changes through reloader.
-func WatchPaths(paths, excludePatterns []string, reloader Reloader, log termlog.Logger) error {
+func WatchPaths(paths, excludePatterns []string, reloader livereload.Reloader, log termlog.Logger) error {
 	ch := make(chan []string, 1)
 	for _, path := range paths {
 		absPath, err := filepath.Abs(path)
@@ -136,15 +127,15 @@ func WatchPaths(paths, excludePatterns []string, reloader Reloader, log termlog.
 			absPath += string(filepath.Separator)
 		}
 
-		evtchan := make(chan notify.EventInfo, 1)
+		pathchan := make(chan string, 1)
 
-		err = watch(path, evtchan)
+		err = watch(path, pathchan)
 		if err != nil {
 			return err
 		}
 
 		go func() {
-			for files := range batch(evtchan) {
+			for files := range batch(batchTime, pathchan) {
 				files = filterFiles(absPath, files, excludePatterns, log)
 
 				if len(files) > 0 {
@@ -153,12 +144,12 @@ func WatchPaths(paths, excludePatterns []string, reloader Reloader, log termlog.
 			}
 		}()
 	}
-	go liveEvents(reloader, ch)
+	go reloader.Watch(ch)
 	return nil
 }
 
 // WatchRoutes watches the route collection, and broadcasts changes through reloader.
-func WatchRoutes(routes RouteCollection, reloader Reloader, excludePatterns []string, log termlog.Logger) error {
+func WatchRoutes(routes RouteCollection, reloader livereload.Reloader, excludePatterns []string, log termlog.Logger) error {
 	c := make(chan []string, 1)
 	for i := range routes {
 		err := routes[i].Watch(c, excludePatterns, log)
@@ -166,6 +157,6 @@ func WatchRoutes(routes RouteCollection, reloader Reloader, excludePatterns []st
 			return err
 		}
 	}
-	go liveEvents(reloader, c)
+	go reloader.Watch(c)
 	return nil
 }

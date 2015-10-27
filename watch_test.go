@@ -1,6 +1,7 @@
 package devd
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/cortesi/devd/termlog"
@@ -33,24 +34,26 @@ var filterFilesTests = []struct {
 func TestFilterFiles(t *testing.T) {
 	logger := termlog.NewLog()
 	logger.Quiet()
-
 	for i, tt := range filterFilesTests {
 		result := filterFiles("", tt.files, []string{tt.pattern}, logger)
-		err := false
-
-		if len(result) != len(tt.expected) {
-			err = true
-		} else {
-			for j := range result {
-				if result[j] != tt.expected[j] {
-					err = true
-					break
-				}
-			}
+		if !reflect.DeepEqual(result, tt.expected) {
+			t.Errorf(
+				"Test %d (pattern %s), expected \"%v\" got \"%v\"",
+				i, tt.pattern, tt.expected, result,
+			)
 		}
+	}
+}
 
-		if err {
-			t.Errorf("Test %d (pattern %s), expected \"%s\" got \"%s\"", i, tt.pattern, tt.expected, result)
-		}
+func TestBatch(t *testing.T) {
+	input := make(chan string, 2)
+	input <- "nonexistent"
+	input <- "./testdata/index.html"
+
+	output := batch(0, input)
+	ret := <-output
+
+	if !reflect.DeepEqual(ret, []string{"./testdata/index.html"}) {
+		t.Error("Unexpected return from batch.")
 	}
 }
