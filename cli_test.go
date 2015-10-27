@@ -53,9 +53,37 @@ func TestDevdRouteHandler(t *testing.T) {
 	r := Route{"", "/", fsEndpoint("./testdata")}
 	templates := ricetemp.MustMakeTemplates(rice.MustFindBox("templates"))
 
-	devd := Devd{}
+	devd := Devd{LivereloadRoutes: true}
 	h := devd.RouteHandler(logger, r, templates)
 	ht := handlerTester{t, h}
 
 	AssertCode(t, ht.Request("GET", "/", nil), 200)
+}
+
+func TestDevdHandler(t *testing.T) {
+	logger := termlog.NewLog()
+	logger.Quiet()
+	templates := ricetemp.MustMakeTemplates(rice.MustFindBox("templates"))
+
+	devd := Devd{LivereloadRoutes: true, WatchPaths: []string{"./"}}
+	devd.AddRoutes([]string{"./"})
+	h, err := devd.Handler(logger, templates)
+	if err != nil {
+		t.Error(err)
+	}
+	ht := handlerTester{t, h}
+
+	AssertCode(t, ht.Request("GET", "/", nil), 200)
+	AssertCode(t, ht.Request("GET", "/nonexistent", nil), 404)
+}
+
+func TestGetTLSConfig(t *testing.T) {
+	_, err := getTLSConfig("nonexistent")
+	if err == nil {
+		t.Error("Expected failure, found success.")
+	}
+	_, err = getTLSConfig("./testdata/certbundle.pem")
+	if err != nil {
+		t.Errorf("Could not get TLS config: %s", err)
+	}
 }
