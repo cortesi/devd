@@ -135,7 +135,7 @@ func (dd *Devd) RouteHandler(log termlog.Logger, route Route, templates *templat
 			sublog.Done()
 		}()
 
-		if matchStringAny(dd.IgnoreLogs, fmt.Sprintf("%s%s", route.Host, r.RequestURI)) {
+		if matchStringAny(dd.IgnoreLogs, fmt.Sprintf("%s%s", r.URL.Host, r.RequestURI)) {
 			sublog.Quiet()
 		}
 		timr.RequestHeaders()
@@ -190,10 +190,20 @@ func (dd *Devd) AddIgnores(specs []string) error {
 	return nil
 }
 
+// HandleNotFound handles pages not found
+func HandleNotFound(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotFound)
+	fmt.Fprint(w, "404: Not found")
+}
+
 // Handler construc5ts the Devd handler
 func (dd *Devd) Handler(logger termlog.Logger, templates *template.Template) (http.Handler, error) {
 	mux := http.NewServeMux()
+	hasGlobal := false
 	for match, route := range dd.Routes {
+		if match == "/" {
+			hasGlobal = true
+		}
 		mux.Handle(match, dd.RouteHandler(logger, route, templates))
 	}
 	if dd.HasLivereload() {
@@ -212,6 +222,9 @@ func (dd *Devd) Handler(logger termlog.Logger, templates *template.Template) (ht
 				return nil, fmt.Errorf("Could not watch path for livereload: %s", err)
 			}
 		}
+	}
+	if !hasGlobal {
+		mux.Handle("/", http.HandlerFunc(HandleNotFound))
 	}
 	return hostPortStrip(mux), nil
 }
