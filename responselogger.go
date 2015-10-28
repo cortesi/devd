@@ -35,10 +35,7 @@ func (rl *ResponseLogWriter) logCode(code int, status string) {
 	}
 	cl := rl.Header().Get("content-length")
 	if cl != "" {
-		cli, err := strconv.Atoi(cl)
-		if err != nil {
-			cl = "invalid content length header"
-		} else {
+		if cli, err := strconv.Atoi(cl); err == nil {
 			cl = fmt.Sprintf("%s", humanize.Bytes(uint64(cli)))
 		}
 	}
