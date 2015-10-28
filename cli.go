@@ -13,6 +13,7 @@ import (
 
 	"github.com/GeertJohan/go.rice"
 
+	"github.com/cortesi/devd/httpctx"
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/livereload"
 	"github.com/cortesi/devd/ricetemp"
@@ -116,25 +117,17 @@ type Devd struct {
 	IgnoreLogs []*regexp.Regexp
 }
 
-// RouteHandler handles a single route
-func (dd *Devd) RouteHandler(log termlog.Logger, route Route, templates *template.Template) http.Handler {
-	ci := inject.CopyInject{}
-	if dd.HasLivereload() {
-		ci = livereload.Injector
-	}
-	next := route.Endpoint.Handler(templates, ci)
+// WrapHandler wraps an httpctx.Handler in the paraphernalia needed by devd for
+// logging, latency, and so forth.
+func (dd *Devd) WrapHandler(log termlog.Logger, next httpctx.Handler) http.Handler {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		timr := timer.Timer{}
 		sublog := log.Group()
 		defer func() {
 			timing := termlog.DefaultPalette.Timestamp.SprintFunc()("timing: ")
-			sublog.SayAs(
-				"timer",
-				timing+timr.String(),
-			)
+			sublog.SayAs("timer", timing+timr.String())
 			sublog.Done()
 		}()
-
 		if matchStringAny(dd.IgnoreLogs, fmt.Sprintf("%s%s", r.URL.Host, r.RequestURI)) {
 			sublog.Quiet()
 		}
@@ -146,15 +139,11 @@ func (dd *Devd) RouteHandler(log termlog.Logger, route Route, templates *templat
 		ctx = termlog.NewContext(ctx, sublog)
 		next.ServeHTTPContext(
 			ctx,
-			&ResponseLogWriter{
-				Log:   sublog,
-				Resp:  w,
-				Timer: &timr,
-			},
+			&ResponseLogWriter{Log: sublog, Resp: w, Timer: &timr},
 			r,
 		)
 	})
-	return http.StripPrefix(route.Path, h)
+	return h
 }
 
 // HasLivereload tells us if liverload is enabled
@@ -191,20 +180,31 @@ func (dd *Devd) AddIgnores(specs []string) error {
 }
 
 // HandleNotFound handles pages not found
-func HandleNotFound(w http.ResponseWriter, r *http.Request) {
+func HandleNotFound(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	fmt.Fprint(w, "404: Not found")
 }
 
-// Handler construc5ts the Devd handler
-func (dd *Devd) Handler(logger termlog.Logger, templates *template.Template) (http.Handler, error) {
+// Router constructs the main Devd router that serves all requests
+func (dd *Devd) Router(logger termlog.Logger, templates *template.Template) (http.Handler, error) {
 	mux := http.NewServeMux()
 	hasGlobal := false
+
+	ci := inject.CopyInject{}
+	if dd.HasLivereload() {
+		ci = livereload.Injector
+	}
+
 	for match, route := range dd.Routes {
 		if match == "/" {
 			hasGlobal = true
 		}
-		mux.Handle(match, dd.RouteHandler(logger, route, templates))
+		handler := dd.WrapHandler(
+			logger,
+			route.Endpoint.Handler(templates, ci),
+		)
+		handler = http.StripPrefix(route.Path, handler)
+		mux.Handle(match, handler)
 	}
 	if dd.HasLivereload() {
 		lr := livereload.NewServer("livereload", logger)
@@ -224,7 +224,10 @@ func (dd *Devd) Handler(logger termlog.Logger, templates *template.Template) (ht
 		}
 	}
 	if !hasGlobal {
-		mux.Handle("/", http.HandlerFunc(HandleNotFound))
+		mux.Handle(
+			"/",
+			dd.WrapHandler(logger, httpctx.HandlerFunc(HandleNotFound)),
+		)
 	}
 	return hostPortStrip(mux), nil
 }
@@ -236,7 +239,7 @@ func (dd *Devd) Serve(address string, port int, certFile string, logger termlog.
 	if err != nil {
 		return fmt.Errorf("Error loading templates: %s", err)
 	}
-	mux, err := dd.Handler(logger, templates)
+	mux, err := dd.Router(logger, templates)
 	if err != nil {
 		return err
 	}

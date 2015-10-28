@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/GeertJohan/go.rice"
+	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/ricetemp"
 	"github.com/cortesi/devd/termlog"
 )
@@ -52,9 +53,10 @@ func TestDevdRouteHandler(t *testing.T) {
 	logger.Quiet()
 	r := Route{"", "/", fsEndpoint("./testdata")}
 	templates := ricetemp.MustMakeTemplates(rice.MustFindBox("templates"))
+	ci := inject.CopyInject{}
 
 	devd := Devd{LivereloadRoutes: true}
-	h := devd.RouteHandler(logger, r, templates)
+	h := devd.WrapHandler(logger, r.Endpoint.Handler(templates, ci))
 	ht := handlerTester{t, h}
 
 	AssertCode(t, ht.Request("GET", "/", nil), 200)
@@ -67,7 +69,7 @@ func TestDevdHandler(t *testing.T) {
 
 	devd := Devd{LivereloadRoutes: true, WatchPaths: []string{"./"}}
 	devd.AddRoutes([]string{"./"})
-	h, err := devd.Handler(logger, templates)
+	h, err := devd.Router(logger, templates)
 	if err != nil {
 		t.Error(err)
 	}
