@@ -10,6 +10,10 @@
 
 Go to the [releases page](https://github.com/cortesi/devd/releases/latest), download the package for your OS, and copy the binary to somewhere on your PATH.
 
+If you have a working Go installation, you can also say
+
+    go get github.com/cortesi/devd/cmd/devd
+
 # Quick start
 
 Serve the current directory, open it in the browser (**-o**), and livereload when files change (**-l**):
