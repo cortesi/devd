@@ -7,11 +7,13 @@ import (
 	"net"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"github.com/GeertJohan/go.rice"
+	"github.com/goji/httpauth"
 
 	"github.com/cortesi/devd/httpctx"
 	"github.com/cortesi/devd/inject"
@@ -99,6 +101,21 @@ func formatURL(tls bool, httpIP string, port int) string {
 	return fmt.Sprintf("%s://%s:%d", proto, host, port)
 }
 
+// Credentials is a simple username/password pair
+type Credentials struct {
+	username string
+	password string
+}
+
+// CredentialsFromSpec creates a set of credentials from a spec
+func CredentialsFromSpec(spec string) (*Credentials, error) {
+	parts := strings.SplitN(spec, ":", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return nil, fmt.Errorf("Invalid credential spec: %s", spec)
+	}
+	return &Credentials{parts[0], parts[1]}, nil
+}
+
 // Devd represents the devd server options
 type Devd struct {
 	Routes RouteCollection
@@ -115,6 +132,9 @@ type Devd struct {
 
 	// Logging
 	IgnoreLogs []*regexp.Regexp
+
+	// Password protection
+	Credentials *Credentials
 }
 
 // WrapHandler wraps an httpctx.Handler in the paraphernalia needed by devd for
@@ -229,7 +249,13 @@ func (dd *Devd) Router(logger termlog.Logger, templates *template.Template) (htt
 			dd.WrapHandler(logger, httpctx.HandlerFunc(HandleNotFound)),
 		)
 	}
-	return hostPortStrip(mux), nil
+	var h http.Handler = mux
+	if dd.Credentials != nil {
+		h = httpauth.SimpleBasicAuth(
+			dd.Credentials.username, dd.Credentials.password,
+		)(h)
+	}
+	return hostPortStrip(h), nil
 }
 
 // Serve starts the devd server. The callback is called with the serving URL

@@ -68,6 +68,14 @@ func main() {
 		Short('p').
 		Int()
 
+	credspec := kingpin.Flag(
+		"password",
+		"HTTP basic password protection",
+	).
+		PlaceHolder("USER:PASS").
+		Short('P').
+		String()
+
 	quiet := kingpin.Flag("quiet", "Silence all logs").
 		Short('q').
 		Default("false").
@@ -120,6 +128,16 @@ func main() {
 		realAddr = "0.0.0.0"
 	}
 
+	var creds *devd.Credentials
+	if *credspec != "" {
+		var err error
+		creds, err = devd.CredentialsFromSpec(*credspec)
+		if err != nil {
+			kingpin.Fatalf("%s", err)
+			return
+		}
+	}
+
 	dd := devd.Devd{
 		// Shaping
 		Latency:  *latency,
@@ -130,6 +148,8 @@ func main() {
 		LivereloadRoutes: *livereloadRoutes,
 		WatchPaths:       *watch,
 		Excludes:         *excludes,
+
+		Credentials: creds,
 	}
 
 	if err := dd.AddRoutes(*routes); err != nil {
