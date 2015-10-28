@@ -275,7 +275,13 @@
 
 
 (function() {
-    ws = new ReconnectingWebSocket("ws://" + window.location.host + "/.devd.livereload")
+    ws = new ReconnectingWebSocket(
+        "ws://" + window.location.host + "/.devd.livereload",
+        null,
+        {
+            maxReconnectInterval: 3000,
+        }
+    )
     ws.onmessage = function(event) {
         if (event.data == "page") {
             location.reload();
