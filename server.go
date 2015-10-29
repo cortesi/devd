@@ -200,9 +200,15 @@ func (dd *Devd) AddIgnores(specs []string) error {
 }
 
 // HandleNotFound handles pages not found
-func HandleNotFound(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotFound)
-	fmt.Fprint(w, "404: Not found")
+func HandleNotFound(templates *template.Template) httpctx.Handler {
+	return httpctx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		err := templates.Lookup("404.html").Execute(w, nil)
+		if err != nil {
+			logger := termlog.FromContext(ctx)
+			logger.Shout("Could not execute template: %s", err)
+		}
+	})
 }
 
 // Router constructs the main Devd router that serves all requests
@@ -246,7 +252,7 @@ func (dd *Devd) Router(logger termlog.Logger, templates *template.Template) (htt
 	if !hasGlobal {
 		mux.Handle(
 			"/",
-			dd.WrapHandler(logger, httpctx.HandlerFunc(HandleNotFound)),
+			dd.WrapHandler(logger, HandleNotFound(templates)),
 		)
 	}
 	var h http.Handler = mux
