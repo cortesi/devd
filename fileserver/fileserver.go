@@ -4,9 +4,7 @@
 package fileserver
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
 	"html/template"
 	"io"
 	"mime"
@@ -46,24 +44,9 @@ func dirList(ci inject.CopyInject, logger termlog.Logger, w http.ResponseWriter,
 		return
 	}
 	data := dirData{Name: name, Files: files}
-	buff := bytes.NewBuffer(make([]byte, 0, 0))
-	err = templates.Lookup("dirlist.html").Execute(buff, data)
-	length := buff.Len()
+	err = ci.ServeTemplate(http.StatusOK, w, templates.Lookup("dirlist.html"), data)
 	if err != nil {
-		logger.Shout("Error producing directory listing: %s", err)
-	}
-	inj, err := ci.Sniff(buff)
-	if err != nil {
-		logger.Shout("Failed to inject in dir listing: %s", err)
-		return
-	}
-	w.Header().Set(
-		"Content-Length", fmt.Sprintf("%d", length+inj.Extra()),
-	)
-	_, err = inj.Copy(w)
-	if err != nil {
-		logger.Shout("Failed to inject in dir listing: %s", err)
-		return
+		logger.Shout("Failed to generate dir listing: %s", err)
 	}
 }
 
@@ -239,6 +222,14 @@ func (fserver *FileServer) ServeHTTPContext(
 	fserver.serveFile(logger, w, r, path.Clean(upath), true)
 }
 
+func notFound(ci inject.CopyInject, templates *template.Template, w http.ResponseWriter) error {
+	err := ci.ServeTemplate(http.StatusNotFound, w, templates.Lookup("404.html"), nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // name is '/'-separated, not filepath.Separator.
 func (fserver *FileServer) serveFile(
 	logger termlog.Logger,
@@ -263,7 +254,9 @@ func (fserver *FileServer) serveFile(
 	f, err := fserver.Root.Open(name)
 	if err != nil {
 		logger.WarnAs("debug", "debug fileserver: %s", err)
-		http.NotFound(w, r)
+		if err := notFound(fserver.Inject, fserver.Templates, w); err != nil {
+			logger.Shout("Internal error: %s", err)
+		}
 		return
 	}
 	defer f.Close()
@@ -271,7 +264,9 @@ func (fserver *FileServer) serveFile(
 	d, err1 := f.Stat()
 	if err1 != nil {
 		logger.WarnAs("debug", "debug fileserver: %s", err)
-		http.NotFound(w, r)
+		if err := notFound(fserver.Inject, fserver.Templates, w); err != nil {
+			logger.Shout("Internal error: %s", err)
+		}
 		return
 	}
 

@@ -199,7 +199,9 @@ func (dd *Devd) AddIgnores(specs []string) error {
 	return nil
 }
 
-// HandleNotFound handles pages not found
+// HandleNotFound handles pages not found. In particular, this handler is used
+// when we have no matching route for a request. This also means it's not
+// useful to inject the livereload paraphernalia here.
 func HandleNotFound(templates *template.Template) httpctx.Handler {
 	return httpctx.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)

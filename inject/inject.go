@@ -11,7 +11,9 @@ package inject
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"io"
+	"net/http"
 	"regexp"
 )
 
@@ -76,6 +78,30 @@ func (ci *CopyInject) Sniff(src io.Reader) (*Injector, error) {
 		injector.offset = loc[0]
 	}
 	return injector, nil
+}
+
+// ServeTemplate renders and serves a template to an http.ResponseWriter
+func (ci *CopyInject) ServeTemplate(statuscode int, w http.ResponseWriter, t *template.Template, data interface{}) error {
+	buff := bytes.NewBuffer(make([]byte, 0, 0))
+	err := t.Execute(buff, data)
+	if err != nil {
+		return err
+	}
+
+	length := buff.Len()
+	inj, err := ci.Sniff(buff)
+	if err != nil {
+		return err
+	}
+	w.Header().Set(
+		"Content-Length", fmt.Sprintf("%d", length+inj.Extra()),
+	)
+	w.WriteHeader(statuscode)
+	_, err = inj.Copy(w)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Copy copies the data from src to dst, injecting the Payload if Sniff found
