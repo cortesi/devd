@@ -44,16 +44,3 @@ func TestFilterFiles(t *testing.T) {
 		}
 	}
 }
-
-func TestBatch(t *testing.T) {
-	input := make(chan string, 2)
-	input <- "nonexistent"
-	input <- "./testdata/index.html"
-
-	output := batch(0, input)
-	ret := <-output
-
-	if !reflect.DeepEqual(ret, []string{"./testdata/index.html"}) {
-		t.Error("Unexpected return from batch.")
-	}
-}

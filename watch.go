@@ -1,7 +1,6 @@
 package devd
 
 import (
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -10,72 +9,23 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/cortesi/devd/livereload"
 	"github.com/cortesi/devd/termlog"
-	"github.com/rjeczalik/notify"
+	"github.com/cortesi/devd/watch"
 )
 
 const batchTime = time.Millisecond * 200
-
-// This function batches events up, and emits just a list of paths for files
-// considered changed. It applies some heuristics to deal with short-lived
-// temporary files.
-func batch(batchTime time.Duration, ch chan string) chan []string {
-	ret := make(chan []string)
-	go func() {
-		emap := make(map[string]bool)
-		for {
-			select {
-			case path := <-ch:
-				emap[path] = true
-			case <-time.After(batchTime):
-				keys := make([]string, 0, len(emap))
-				for k := range emap {
-					_, err := os.Stat(k)
-					if err == nil {
-						keys = append(keys, k)
-					}
-				}
-				if len(keys) > 0 {
-					ret <- keys
-				}
-				emap = make(map[string]bool)
-			}
-		}
-	}()
-	return ret
-}
-
-func watch(p string, ch chan string) error {
-	stat, err := os.Stat(p)
-	if err != nil {
-		return err
-	}
-	if stat.IsDir() {
-		p = path.Join(p, "...")
-	}
-	evtch := make(chan notify.EventInfo)
-	err = notify.Watch(p, evtch, notify.All)
-	if err == nil {
-		go func() {
-			for e := range evtch {
-				ch <- e.Path()
-			}
-		}()
-	}
-	return err
-}
 
 // Watch watches an endpoint for changes, if it supports them.
 func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Logger) error {
 	switch r.Endpoint.(type) {
 	case *filesystemEndpoint:
 		ep := *r.Endpoint.(*filesystemEndpoint)
-		pathchan := make(chan string, 1)
-		err := watch(string(ep), pathchan)
+		pathchan := make(chan []string, 1)
+		err := watch.Watch(string(ep), batchTime, pathchan)
 		if err != nil {
 			return err
 		}
 		go func() {
-			for files := range batch(batchTime, pathchan) {
+			for files := range pathchan {
 				for i, fpath := range files {
 					files[i] = path.Join(
 						r.Path,
@@ -127,17 +77,14 @@ func WatchPaths(paths, excludePatterns []string, reloader livereload.Reloader, l
 			absPath += string(filepath.Separator)
 		}
 
-		pathchan := make(chan string, 1)
-
-		err = watch(path, pathchan)
+		pathchan := make(chan []string, 1)
+		err = watch.Watch(path, batchTime, pathchan)
 		if err != nil {
 			return err
 		}
-
 		go func() {
-			for files := range batch(batchTime, pathchan) {
+			for files := range pathchan {
 				files = filterFiles(absPath, files, excludePatterns, log)
-
 				if len(files) > 0 {
 					ch <- files
 				}
