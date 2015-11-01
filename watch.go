@@ -1,15 +1,12 @@
 package devd
 
 import (
-	"path"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/cortesi/devd/livereload"
+	"github.com/cortesi/devd/modd"
 	"github.com/cortesi/devd/termlog"
-	"github.com/cortesi/devd/watch"
 )
 
 const batchTime = time.Millisecond * 200
@@ -20,19 +17,13 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 	case *filesystemEndpoint:
 		ep := *r.Endpoint.(*filesystemEndpoint)
 		pathchan := make(chan []string, 1)
-		err := watch.Watch(string(ep), batchTime, pathchan)
+		err := modd.Watch(string(ep), batchTime, pathchan)
 		if err != nil {
 			return err
 		}
 		go func() {
 			for files := range pathchan {
-				for i, fpath := range files {
-					files[i] = path.Join(
-						r.Path,
-						strings.TrimPrefix(fpath, string(ep)),
-					)
-				}
-				files = filterFiles("/", files, excludePatterns, log)
+				files = filterFiles(files, excludePatterns, log)
 				ch <- files
 			}
 		}()
@@ -54,11 +45,10 @@ func shouldInclude(file string, excludePatterns []string, log termlog.Logger) bo
 }
 
 // Filter out the files that match the given exclude patterns.
-func filterFiles(pathPrefix string, files, excludePatterns []string, log termlog.Logger) []string {
+func filterFiles(files, excludePatterns []string, log termlog.Logger) []string {
 	ret := []string{}
 	for _, file := range files {
-		relFile := strings.TrimPrefix(file, pathPrefix)
-		if shouldInclude(relFile, excludePatterns, log) {
+		if shouldInclude(file, excludePatterns, log) {
 			ret = append(ret, file)
 		}
 	}
@@ -69,22 +59,14 @@ func filterFiles(pathPrefix string, files, excludePatterns []string, log termlog
 func WatchPaths(paths, excludePatterns []string, reloader livereload.Reloader, log termlog.Logger) error {
 	ch := make(chan []string, 1)
 	for _, path := range paths {
-		absPath, err := filepath.Abs(path)
-		if err != nil {
-			return err
-		}
-		if absPath[len(absPath)-1] != filepath.Separator {
-			absPath += string(filepath.Separator)
-		}
-
 		pathchan := make(chan []string, 1)
-		err = watch.Watch(path, batchTime, pathchan)
+		err := modd.Watch(path, batchTime, pathchan)
 		if err != nil {
 			return err
 		}
 		go func() {
 			for files := range pathchan {
-				files = filterFiles(absPath, files, excludePatterns, log)
+				files = filterFiles(files, excludePatterns, log)
 				if len(files) > 0 {
 					ch <- files
 				}

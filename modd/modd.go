@@ -1,12 +1,27 @@
-package watch
+package modd
 
 import (
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/rjeczalik/notify"
 )
+
+// Notify events have absolute paths. We want to normalize these so that they
+// are relative to the base path.
+func normPath(base string, abspath string) (string, error) {
+	absbase, err := filepath.Abs(base)
+	if err != nil {
+		return "", err
+	}
+	relpath, err := filepath.Rel(absbase, abspath)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(base, relpath), nil
+}
 
 // An existenceChecker checks the existence of a file
 type existenceChecker interface {
@@ -27,8 +42,10 @@ func (sc statChecker) Check(p string) bool {
 // considered changed. It applies some heuristics to deal with short-lived
 // temporary files.
 //
-// - Events can arrive out of order - i.e. we can get a removal notice first
-// then a creation notice for a transient file.
+// - Events can arrive out of order - i.e. we can get a removal event first
+// then a creation event for a transient file.
+// - Events seem to be unreliable on some platforms - i.e. we might get a
+// removal event but never see a creation event.
 func batch(batchTime time.Duration, exists existenceChecker, ch chan notify.EventInfo) []string {
 	emap := make(map[string]bool)
 	for {
@@ -49,8 +66,8 @@ func batch(batchTime time.Duration, exists existenceChecker, ch chan notify.Even
 
 // Watch watches a path p, batching events with duration batchTime. A list of
 // strings are written to chan, representing all files changed, added or
-// removed. We apply heuristics to do things like cope with transient
-// files.
+// removed. We apply heuristics to cope with things like transient files and
+// unreliable event notifications.
 func Watch(p string, batchTime time.Duration, ch chan []string) error {
 	stat, err := os.Stat(p)
 	if err != nil {
@@ -66,6 +83,10 @@ func Watch(p string, batchTime time.Duration, ch chan []string) error {
 			for {
 				ret := batch(batchTime, statChecker{}, evtch)
 				if len(ret) > 0 {
+					for i := range ret {
+						norm, _ := normPath(p, ret[i])
+						ret[i] = norm
+					}
 					ch <- ret
 				}
 			}

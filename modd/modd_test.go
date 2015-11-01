@@ -1,7 +1,8 @@
-package watch
+package modd
 
 import (
-	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
@@ -75,7 +76,33 @@ func TestBatch(t *testing.T) {
 		sort.Strings(ret)
 		sort.Strings(tst.expected)
 		if !reflect.DeepEqual(ret, tst.expected) {
-			fmt.Println(cap(ret), cap(tst.expected))
+			t.Errorf("Test %d: expected %#v, got %#v", i, tst.expected, ret)
+		}
+	}
+}
+
+func abs(path string) string {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic("Could not get current working directory")
+	}
+	return filepath.Join(wd, path)
+}
+
+var normPathTests = []struct {
+	base     string
+	abspath  string
+	expected string
+}{
+	{"./tmp", abs("./tmp/bar"), "tmp/bar"},
+	{abs("./tmp"), abs("./tmp/bar"), abs("tmp/bar")},
+	{"tmp", abs("tmp/bar"), "tmp/bar"},
+}
+
+func TestNormPath(t *testing.T) {
+	for i, tst := range normPathTests {
+		ret, err := normPath(tst.base, tst.abspath)
+		if err != nil || ret != tst.expected {
 			t.Errorf("Test %d: expected %#v, got %#v", i, tst.expected, ret)
 		}
 	}

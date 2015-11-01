@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"strings"
 
 	"github.com/cortesi/devd/fileserver"
@@ -54,10 +53,6 @@ func (ep forwardEndpoint) String() string {
 type filesystemEndpoint string
 
 func newFilesystemEndpoint(path string) (*filesystemEndpoint, error) {
-	path, err := filepath.Abs(path)
-	if err != nil {
-		return nil, err
-	}
 	f := filesystemEndpoint(path)
 	return &f, nil
 }

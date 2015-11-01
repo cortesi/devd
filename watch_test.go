@@ -35,7 +35,7 @@ func TestFilterFiles(t *testing.T) {
 	logger := termlog.NewLog()
 	logger.Quiet()
 	for i, tt := range filterFilesTests {
-		result := filterFiles("", tt.files, []string{tt.pattern}, logger)
+		result := filterFiles(tt.files, []string{tt.pattern}, logger)
 		if !reflect.DeepEqual(result, tt.expected) {
 			t.Errorf(
 				"Test %d (pattern %s), expected \"%v\" got \"%v\"",
