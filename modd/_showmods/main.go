@@ -1,4 +1,5 @@
 package main
+
 // A simple demo app that just prints all files changed for a path
 
 import (
@@ -18,14 +19,22 @@ func main() {
 	).Required().Strings()
 	kingpin.Parse()
 
-	pathchan := make(chan []string)
+	modchan := make(chan modd.Mod)
 	for _, path := range *paths {
-		err := modd.Watch(path, batchTime, pathchan)
+		err := modd.Watch(path, batchTime, modchan)
 		if err != nil {
 			kingpin.Fatalf("Fatal error: %s", err)
 		}
 	}
-	for paths := range pathchan {
-		fmt.Println(paths)
+	for mod := range modchan {
+		if len(mod.Added) > 0 {
+			fmt.Printf("Added: %v\n", mod.Added)
+		}
+		if len(mod.Changed) > 0 {
+			fmt.Printf("Changed: %v\n", mod.Changed)
+		}
+		if len(mod.Deleted) > 0 {
+			fmt.Printf("Removed: %v\n", mod.Deleted)
+		}
 	}
 }

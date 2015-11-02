@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"testing"
 
 	"github.com/rjeczalik/notify"
@@ -47,22 +46,22 @@ func exists(paths ...string) *testExistenceChecker {
 var batchTests = []struct {
 	events   []TEventInfo
 	exists   *testExistenceChecker
-	expected []string
+	expected Mod
 }{
 	{
 		[]TEventInfo{
 			TEventInfo{notify.Create, "foo"},
 			TEventInfo{notify.Create, "bar"},
 		},
-		exists("foo", "bar"),
-		[]string{"foo", "bar"},
+		exists("bar", "foo"),
+		Mod{Added: []string{"bar", "foo"}},
 	},
 	{
 		[]TEventInfo{
 			TEventInfo{notify.Create, "foo"},
 		},
 		exists(),
-		[]string(nil),
+		Mod{},
 	},
 }
 
@@ -72,11 +71,9 @@ func TestBatch(t *testing.T) {
 		for _, e := range tst.events {
 			input <- e
 		}
-		ret := batch(0, tst.exists, input)
-		sort.Strings(ret)
-		sort.Strings(tst.expected)
-		if !reflect.DeepEqual(ret, tst.expected) {
-			t.Errorf("Test %d: expected %#v, got %#v", i, tst.expected, ret)
+		ret := batch(".", 0, tst.exists, input)
+		if !reflect.DeepEqual(*ret, tst.expected) {
+			t.Errorf("Test %d: expected\n%#v\ngot\n%#v", i, tst.expected, *ret)
 		}
 	}
 }
