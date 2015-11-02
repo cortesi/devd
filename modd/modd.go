@@ -38,6 +38,30 @@ func (sc statChecker) Check(p string) bool {
 	return false
 }
 
+// Mod encapsulates a set of changes
+type Mod struct {
+	Changed []string
+	Deleted []string
+	Added   []string
+}
+
+func (*Mod) normPath(base string) error {
+	// for i := range ret {
+	// 	norm, _ := normPath(p, ret[i])
+	// 	ret[i] = norm
+	// }
+
+	return nil
+}
+
+func newMod() *Mod {
+	return &Mod{
+		make([]string, 0),
+		make([]string, 0),
+		make([]string, 0),
+	}
+}
+
 // This function batches events up, and emits just a list of paths for files
 // considered changed. It applies some heuristics to deal with short-lived
 // temporary files.
@@ -46,17 +70,28 @@ func (sc statChecker) Check(p string) bool {
 // then a creation event for a transient file.
 // - Events seem to be unreliable on some platforms - i.e. we might get a
 // removal event but never see a creation event.
-func batch(batchTime time.Duration, exists existenceChecker, ch chan notify.EventInfo) []string {
-	emap := make(map[string]bool)
+func batch(batchTime time.Duration, exists existenceChecker, ch chan notify.EventInfo) *Mod {
+	created := make(map[string]bool)
+	removed := make(map[string]bool)
+	changed := make(map[string]bool)
 	for {
 		select {
 		case evt := <-ch:
-			emap[evt.Path()] = true
+			switch evt.Event() {
+			case notify.Create:
+				created[evt.Path()] = true
+			case notify.Remove:
+				removed[evt.Path()] = true
+			case notify.Write:
+				changed[evt.Path()] = true
+			case notify.Rename:
+				created[evt.Path()] = true
+			}
 		case <-time.After(batchTime):
-			var ret []string
-			for k := range emap {
+			ret := newMod()
+			for k := range changed {
 				if exists.Check(k) {
-					ret = append(ret, k)
+					//ret = append(ret, k)
 				}
 			}
 			return ret
@@ -68,7 +103,7 @@ func batch(batchTime time.Duration, exists existenceChecker, ch chan notify.Even
 // strings are written to chan, representing all files changed, added or
 // removed. We apply heuristics to cope with things like transient files and
 // unreliable event notifications.
-func Watch(p string, batchTime time.Duration, ch chan []string) error {
+func Watch(p string, batchTime time.Duration, ch chan Mod) error {
 	stat, err := os.Stat(p)
 	if err != nil {
 		return err
@@ -82,12 +117,9 @@ func Watch(p string, batchTime time.Duration, ch chan []string) error {
 		go func() {
 			for {
 				ret := batch(batchTime, statChecker{}, evtch)
-				if len(ret) > 0 {
-					for i := range ret {
-						norm, _ := normPath(p, ret[i])
-						ret[i] = norm
-					}
-					ch <- ret
+				if ret != nil {
+					ret.normPath(p)
+					ch <- *ret
 				}
 			}
 		}()
