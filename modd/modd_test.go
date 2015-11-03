@@ -58,6 +58,45 @@ var batchTests = []struct {
 	},
 	{
 		[]TEventInfo{
+			TEventInfo{notify.Rename, "foo"},
+			TEventInfo{notify.Rename, "bar"},
+		},
+		exists("foo"),
+		Mod{Added: []string{"foo"}, Deleted: []string{"bar"}},
+	},
+	{
+		[]TEventInfo{
+			TEventInfo{notify.Write, "foo"},
+		},
+		exists("foo"),
+		Mod{Changed: []string{"foo"}},
+	},
+	{
+		[]TEventInfo{
+			TEventInfo{notify.Write, "foo"},
+			TEventInfo{notify.Remove, "foo"},
+		},
+		exists(),
+		Mod{Deleted: []string{"foo"}},
+	},
+	{
+		[]TEventInfo{
+			TEventInfo{notify.Remove, "foo"},
+		},
+		exists("foo"),
+		Mod{},
+	},
+	{
+		[]TEventInfo{
+			TEventInfo{notify.Create, "foo"},
+			TEventInfo{notify.Create, "bar"},
+			TEventInfo{notify.Remove, "bar"},
+		},
+		exists("bar", "foo"),
+		Mod{Added: []string{"bar", "foo"}},
+	},
+	{
+		[]TEventInfo{
 			TEventInfo{notify.Create, "foo"},
 		},
 		exists(),
@@ -102,5 +141,31 @@ func TestNormPath(t *testing.T) {
 		if err != nil || ret != tst.expected {
 			t.Errorf("Test %d: expected %#v, got %#v", i, tst.expected, ret)
 		}
+	}
+}
+
+func TestMod(t *testing.T) {
+	if !(Mod{}.Empty()) {
+		t.Error("Expected mod to be empty.")
+	}
+	m := Mod{
+		Added:   []string{"add"},
+		Deleted: []string{"rm"},
+		Changed: []string{"change"},
+	}
+	if m.Empty() {
+		t.Error("Expected mod not to be empty")
+	}
+	if !reflect.DeepEqual(m.All(), []string{"add", "change", "rm"}) {
+		t.Error("Unexpeced return from Mod.All")
+	}
+
+	m = Mod{
+		Added:   []string{abs("add")},
+		Deleted: []string{abs("rm")},
+		Changed: []string{abs("change")},
+	}
+	if err := m.normPaths("/"); err != nil {
+		t.Error(err)
 	}
 }

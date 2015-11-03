@@ -1,7 +1,6 @@
 package modd
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -41,9 +40,9 @@ type existenceChecker interface {
 	Check(p string) bool
 }
 
-type statChecker struct{}
+type statExistenceChecker struct{}
 
-func (sc statChecker) Check(p string) bool {
+func (sc statExistenceChecker) Check(p string) bool {
 	_, err := os.Stat(p)
 	if err == nil {
 		return true
@@ -110,14 +109,17 @@ func _keys(m map[string]bool) []string {
 
 // This function batches events up, and emits just a list of paths for files
 // considered changed. It applies some heuristics to deal with short-lived
-// temporary files and unreliable filesystem events.
+// temporary files and unreliable filesystem events. There are all sorts of
+// challenges here, that mean we can only do a mediocre job as it stands.
 //
+// - There's no cross-platform way to get the source as well as the destination
+// for Rename events.
 // - Events can arrive out of order - i.e. we can get a removal event first
 // then a creation event for a transient file.
 // - Events seem to be unreliable on some platforms - i.e. we might get a
 // removal event but never see a creation event.
-// - Events are nonsensical on some platforms - i.e. we sometimes get a Create
-// event as well as a Remove event when a pre-existing file is removed.
+// - Events appear nonsensical on some platforms - i.e. we sometimes get a
+// Create event as well as a Remove event when a pre-existing file is removed.
 //
 // In the face of all this, all we can do is layer on a set of heuristics to
 // try to get intuitive results.
@@ -129,7 +131,6 @@ func batch(base string, batchTime time.Duration, exists existenceChecker, ch cha
 	for {
 		select {
 		case evt := <-ch:
-			fmt.Println(evt)
 			switch evt.Event() {
 			case notify.Create:
 				added[evt.Path()] = true
@@ -143,17 +144,13 @@ func batch(base string, batchTime time.Duration, exists existenceChecker, ch cha
 		case <-time.After(batchTime):
 			ret := &Mod{}
 			for k := range renamed {
-				// If a file has been renamed AND exists, we put it in added.
-				// Editors commonly rename files to and from temporary names
-				// during editing.
+				// If a file is moved from A to B, we'll get separate rename
+				// events for both A and B. The only way to know if it was the
+				// source or destination is to check if the file exists.
 				if exists.Check(k) {
 					added[k] = true
-				} else if _, ok := removed[k]; ok {
-					// If a file was renamed, doesn't exist, and has been
-					// removed, we remove it everywhere.
-					delete(added, k)
-					delete(removed, k)
-					delete(changed, k)
+				} else {
+					removed[k] = true
 				}
 			}
 			for k := range added {
@@ -169,6 +166,14 @@ func batch(base string, batchTime time.Duration, exists existenceChecker, ch cha
 					// we've just not recieved a removal notification.
 					delete(added, k)
 					delete(removed, k)
+					delete(changed, k)
+				}
+			}
+			for k := range removed {
+				if exists.Check(k) {
+					delete(removed, k)
+				} else {
+					delete(added, k)
 					delete(changed, k)
 				}
 			}
@@ -197,7 +202,7 @@ func Watch(p string, batchTime time.Duration, ch chan Mod) error {
 	if err == nil {
 		go func() {
 			for {
-				ret := batch(p, batchTime, statChecker{}, evtch)
+				ret := batch(p, batchTime, statExistenceChecker{}, evtch)
 				if ret != nil {
 					ret.normPaths(p)
 					if !ret.Empty() {
