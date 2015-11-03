@@ -1,0 +1,14 @@
+
+v0.2
+
+- -x flag (--exclude) to exclude files from livereload.
+- -P flag (--password) for quick HTTP Basic password protection.
+- -q flag (--quiet) to suppress all output from devd.
+- Humanize file sizes in console logs.
+- Improved directory indexes - better formatting, they now also livereload.
+- Devd's built-in livereload URLs are now less likely to clash with user URLs.
+- Internal 404 pages are now included in logs, timing measurement, and
+  filtering.
+- Much improved heuristics for livereload file change detection. We now
+  handle things like transient files created by editors better.
+- A Linux ARM build will now be distributed with each release.
