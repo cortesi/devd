@@ -116,6 +116,11 @@ func _keys(m map[string]bool) []string {
 // then a creation event for a transient file.
 // - Events seem to be unreliable on some platforms - i.e. we might get a
 // removal event but never see a creation event.
+// - Events are nonsensical on some platforms - i.e. we sometimes get a Create
+// event as well as a Remove event when a pre-existing file is removed.
+//
+// In the face of all this, all we can do is layer on a set of heuristics to
+// try to get intuitive results.
 func batch(base string, batchTime time.Duration, exists existenceChecker, ch chan notify.EventInfo) *Mod {
 	added := make(map[string]bool)
 	removed := make(map[string]bool)
@@ -153,12 +158,10 @@ func batch(base string, batchTime time.Duration, exists existenceChecker, ch cha
 			}
 			for k := range added {
 				if exists.Check(k) {
+					// If a file exists, and has been both added and
+					// changed, we just mark it as added
+					delete(changed, k)
 					delete(removed, k)
-					if _, ok := changed[k]; ok {
-						// If a file exists, and has been both added and
-						// changed, we just mark it as changed
-						delete(added, k)
-					}
 				} else {
 					// If a file has been added, and now does not exist, we
 					// strike it everywhere. This probably means the file is

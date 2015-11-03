@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"gopkg.in/alecthomas/kingpin.v2"
+
 	"github.com/cortesi/devd/modd"
-	"github.com/cortesi/kingpin"
 )
 
 const batchTime = time.Millisecond * 200
