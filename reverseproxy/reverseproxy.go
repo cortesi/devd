@@ -69,6 +69,7 @@ func NewSingleHostReverseProxy(target *url.URL, ci inject.CopyInject) *ReversePr
 		req.URL.Scheme = target.Scheme
 		req.URL.Host = target.Host
 		req.URL.Path = singleJoiningSlash(target.Path, req.URL.Path)
+		req.Host = req.URL.Host
 		if targetQuery == "" || req.URL.RawQuery == "" {
 			req.URL.RawQuery = targetQuery + req.URL.RawQuery
 		} else {
