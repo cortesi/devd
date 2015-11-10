@@ -4,6 +4,7 @@
 package reverseproxy
 
 import (
+	"crypto/tls"
 	"io"
 	"net"
 	"net/http"
@@ -105,7 +106,9 @@ func (p *ReverseProxy) ServeHTTPContext(
 	log := termlog.FromContext(ctx)
 	transport := p.Transport
 	if transport == nil {
-		transport = http.DefaultTransport
+		transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
 	}
 
 	outreq := new(http.Request)
