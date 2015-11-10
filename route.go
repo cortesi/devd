@@ -1,6 +1,7 @@
 package devd
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"html/template"
@@ -33,7 +34,11 @@ type forwardEndpoint url.URL
 
 func (ep forwardEndpoint) Handler(templates *template.Template, ci inject.CopyInject) httpctx.Handler {
 	u := url.URL(ep)
-	return reverseproxy.NewSingleHostReverseProxy(&u, ci)
+	rp := reverseproxy.NewSingleHostReverseProxy(&u, ci)
+	rp.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	return rp
 }
 
 func newForwardEndpoint(path string) (*forwardEndpoint, error) {
