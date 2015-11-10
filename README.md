@@ -194,3 +194,11 @@ Class      | Meaning
 `[abc]`    | matches any single character within the set
 `[a-z]`    | matches any single character in the range
 `[^class]` | matches any single character which does *not* match the class
+
+
+## About reverse proxying
+
+Devd does not validate upstream SSL certificates when reverse proxying. For our
+use case, development servers will usually be running locally, often with
+self-signed certificates for testing. You shouldn't use devd in cases where
+upstream cert validation matters.

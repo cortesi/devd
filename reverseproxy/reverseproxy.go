@@ -4,6 +4,7 @@
 package reverseproxy
 
 import (
+	"crypto/tls"
 	"io"
 	"net"
 	"net/http"
@@ -68,6 +69,7 @@ func NewSingleHostReverseProxy(target *url.URL, ci inject.CopyInject) *ReversePr
 		req.URL.Scheme = target.Scheme
 		req.URL.Host = target.Host
 		req.URL.Path = singleJoiningSlash(target.Path, req.URL.Path)
+		req.Host = req.URL.Host
 		if targetQuery == "" || req.URL.RawQuery == "" {
 			req.URL.RawQuery = targetQuery + req.URL.RawQuery
 		} else {
@@ -105,7 +107,9 @@ func (p *ReverseProxy) ServeHTTPContext(
 	log := termlog.FromContext(ctx)
 	transport := p.Transport
 	if transport == nil {
-		transport = http.DefaultTransport
+		transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
 	}
 
 	outreq := new(http.Request)

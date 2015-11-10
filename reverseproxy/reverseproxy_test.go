@@ -34,8 +34,8 @@ func TestReverseProxy(t *testing.T) {
 		if c := r.Header.Get("Upgrade"); c != "" {
 			t.Errorf("handler got Upgrade header value %q", c)
 		}
-		if g, e := r.Host, "some-name"; g != e {
-			t.Errorf("backend got Host header %q, want %q", g, e)
+		if g, e := r.Host, "some-name"; g == e {
+			t.Errorf("backend got original Host header %q, expected over-written", g)
 		}
 		w.Header().Set("X-Foo", "bar")
 		http.SetCookie(w, &http.Cookie{Name: "flavor", Value: "chocolateChip"})

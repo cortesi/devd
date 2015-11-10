@@ -62,13 +62,25 @@ func getTLSConfig(path string) (t *tls.Config, err error) {
 	return config, nil
 }
 
+// This filthy hack works in conjunction with hostPortStrip to restore the
+// original request host after mux match.
+func revertOriginalHost(r *http.Request) {
+	original := r.Header.Get("_devd_original_host")
+	if original != "" {
+		r.Host = original
+		r.Header.Del("_devd_original_host")
+	}
+}
+
 // We can remove the mangling once this is fixed:
 // 		https://github.com/golang/go/issues/10463
 func hostPortStrip(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host, _, err := net.SplitHostPort(r.Host)
 		if err == nil {
+			original := r.Host
 			r.Host = host
+			r.Header.Set("_devd_original_host", original)
 		}
 		next.ServeHTTP(w, r)
 	})
@@ -141,6 +153,7 @@ type Devd struct {
 // logging, latency, and so forth.
 func (dd *Devd) WrapHandler(log termlog.Logger, next httpctx.Handler) http.Handler {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		revertOriginalHost(r)
 		timr := timer.Timer{}
 		sublog := log.Group()
 		defer func() {
@@ -257,7 +270,7 @@ func (dd *Devd) Router(logger termlog.Logger, templates *template.Template) (htt
 			dd.WrapHandler(logger, HandleNotFound(templates)),
 		)
 	}
-	var h http.Handler = mux
+	var h = http.Handler(mux)
 	if dd.Credentials != nil {
 		h = httpauth.SimpleBasicAuth(
 			dd.Credentials.username, dd.Credentials.password,
