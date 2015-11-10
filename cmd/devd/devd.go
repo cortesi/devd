@@ -1,8 +1,12 @@
 package main
 
 import (
+	"os"
+	"path"
+
 	"github.com/cortesi/devd"
 	"github.com/cortesi/devd/termlog"
+	"github.com/mitchellh/go-homedir"
 	"github.com/toqueteos/webbrowser"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -78,6 +82,11 @@ func main() {
 
 	quiet := kingpin.Flag("quiet", "Silence all logs").
 		Short('q').
+		Default("false").
+		Bool()
+
+	tls := kingpin.Flag("tls", "Serve TLS with auto-generated self-signed certificate (~/.devd.crt)").
+		Short('s').
 		Default("false").
 		Bool()
 
@@ -172,6 +181,21 @@ func main() {
 	}
 	if *logHeaders {
 		logger.Enable("headers")
+	}
+
+	if *tls {
+		home, err := homedir.Dir()
+		if err != nil {
+			kingpin.Fatalf("Could not get user's homedir: %s", err)
+		}
+		dst := path.Join(home, ".devd.cert")
+		if _, err := os.Stat(dst); os.IsNotExist(err) {
+			err := devd.GenerateCert(dst)
+			if err != nil {
+				kingpin.Fatalf("Could not generate cert: %s", err)
+			}
+		}
+		*certFile = dst
 	}
 
 	err := dd.Serve(
