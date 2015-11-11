@@ -1,4 +1,17 @@
 
+v0.3: 12 November 2015
+
+* -s (--tls) Generate a self-signed certificate, and enable TLS. The cert
+  bundle is stored in ~/.devd.cert
+* Add the X-Forwarded-Host header to reverse proxied traffic.
+* Disable upstream cert validation for reverse proxied traffic. This makes
+  using self-signed certs for development easy. Devd shoudn't be used in
+  contexts where this might pose a security risk.
+* Bugfix: make CSS livereload work in Firefox
+* Bugfix: make sure the Host header and SNI host matches for reverse proxied
+  traffic.
+
+
 v0.2
 
 * -x (--exclude) flag to exclude files from livereload.

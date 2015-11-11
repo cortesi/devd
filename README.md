@@ -48,10 +48,15 @@ multiple lines. Devd's logs are detailed, warn about corner cases that other
 daemons ignore, and can optionally include things like detailed timing
 information and full headers.
 
+
+### Convenient
+
 To make quickly firing up an instance as simple as possible, devd automatically
 chooses an open port to run on (unless it's specified), and can open a browser
 window pointing to the daemon root for you (the **-o** flag in the example
-above).
+above). It also has utility features like the **-s** flag, which auto-generates
+a self-signed certificate for devd, stores it in ~/.devd.certs and enables TLS
+all in one step.
 
 
 ### Livereload
