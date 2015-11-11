@@ -286,15 +286,17 @@
         if (event.data == "page") {
             location.reload();
         } else if (event.data == "css") {
-            var head = document.querySelector("head");
-            var stylesheets = document.querySelectorAll("link[rel='stylesheet']");
-            var stringStylesheets = [];
-
-            for (var i = 0; i < stylesheets.length; i++) {
-                var stringStylesheets = stylesheets[i].outerHTML;
-                head.removeChild(stylesheets[i]);
-                head.insertAdjacentHTML("beforeend", stringStylesheets);
-            }
+            // This snippet pinched from quickreload, under the MIT license:
+            // https://github.com/bjoerge/quickreload/blob/master/client.js
+            var killcache = '__devd=' + new Date().getTime();
+            var stylesheets = Array.prototype.slice.call(
+                document.querySelectorAll('link[rel="stylesheet"]')
+            );
+            stylesheets.forEach(function (el) {
+                var href = el.href.replace(/(&|\?)__devd\=\d+/, '');
+                el.href = '';
+                el.href = href + (href.indexOf("?") == -1 ? '?' : '&') + killcache;
+            });
         }
     }
 })();
