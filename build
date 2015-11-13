@@ -1,49 +1,63 @@
 #!/bin/sh
 set -e
 
+function packages
+{
+    echo "Installing locally"
+    go install ./cmd/devd
+    VERSION=$(devd --version 2>&1 >/dev/null)
+    echo "Version is $VERSION"
+
+    WINDIR="devd-$VERSION-windows64"
+    LINUXDIR="devd-$VERSION-linux64"
+    DARWINDIR="devd-$VERSION-osx64"
+    ARMDIR="devd-$VERSION-linux-arm"
+
+    rm -fr ./tmp/$WINDIR* ./tmp/$LINUXDIR* ./tmp/$DARWINDIR* ./tmp/$ARMDIR*
+
+    echo "Building..."
+
+    echo $DARWINDIR
+    mkdir -p ./tmp/$DARWINDIR
+    env GOOS=darwin GOARCH=amd64 go build -o ./tmp/$DARWINDIR/devd ./cmd/devd
+
+    echo $LINUXDIR
+    mkdir -p ./tmp/$LINUXDIR
+    env GOOS=linux GOARCH=amd64 go build -o ./tmp/$LINUXDIR/devd ./cmd/devd
+
+    echo $WINDIR
+    mkdir -p ./tmp/$WINDIR
+    env GOOS=windows GOARCH=amd64 go build -o ./tmp/$WINDIR/devd.exe ./cmd/devd
+
+    echo $ARMDIR
+    mkdir -p ./tmp/$ARMDIR
+    env GOOS=linux GOARCH=arm go build -o ./tmp/$ARMDIR/devd ./cmd/devd
+
+    echo "Creating packages"
+    cd tmp
+    tar -czvf $DARWINDIR.tgz $DARWINDIR
+    tar -czvf $LINUXDIR.tgz $LINUXDIR
+    tar -czvf $ARMDIR.tgz $ARMDIR
+    zip -r "$WINDIR.zip" $WINDIR
+}
+
+function single
+{
+    go build ./cmd/devd
+}
+
 echo "Making static inclusions..."
 rice embed-go
 cd livereload
 rice embed-go
 cd ..
 
-echo "Installing locally"
-go install ./cmd/devd
-VERSION=$(devd --version 2>&1 >/dev/null)
-echo "Version is $VERSION"
-
-WINDIR="devd-$VERSION-windows64"
-LINUXDIR="devd-$VERSION-linux64"
-DARWINDIR="devd-$VERSION-osx64"
-ARMDIR="devd-$VERSION-linux-arm"
-
-rm -fr ./tmp/$WINDIR* ./tmp/$LINUXDIR* ./tmp/$DARWINDIR* ./tmp/$ARMDIR*
-
-echo "Building..."
-
-echo $DARWINDIR
-mkdir -p ./tmp/$DARWINDIR
-env GOOS=darwin GOARCH=amd64 go build -o ./tmp/$DARWINDIR/devd ./cmd/devd
-
-echo $LINUXDIR
-mkdir -p ./tmp/$LINUXDIR
-env GOOS=linux GOARCH=amd64 go build -o ./tmp/$LINUXDIR/devd ./cmd/devd
-
-echo $WINDIR
-mkdir -p ./tmp/$WINDIR
-env GOOS=windows GOARCH=amd64 go build -o ./tmp/$WINDIR/devd.exe ./cmd/devd
-
-echo $ARMDIR
-mkdir -p ./tmp/$ARMDIR
-env GOOS=linux GOARCH=arm go build -o ./tmp/$ARMDIR/devd ./cmd/devd
+if [ "$1" == "single" ]; then
+    single
+else
+    packages
+fi
 
 echo "Removing static inclusions..."
 find . -name "*.rice-box.go" -print0 | xargs -0 rm
 find . -name "rice-box.go" -print0 | xargs -0 rm
-
-echo "Creating packages"
-cd tmp
-tar -czvf $DARWINDIR.tgz $DARWINDIR
-tar -czvf $LINUXDIR.tgz $LINUXDIR
-tar -czvf $ARMDIR.tgz $ARMDIR
-zip -r "$WINDIR.zip" $WINDIR
