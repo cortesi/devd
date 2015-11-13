@@ -3,7 +3,7 @@
         return;
     }
 
-    function ReconnectingWebSocket(url, protocols, options) {
+    function DevdReconnectingWebSocket(url, protocols, options) {
 
         // Default settings
         var settings = {
@@ -127,14 +127,14 @@
                 this.reconnectAttempts = 0;
             }
 
-            if (self.debug || ReconnectingWebSocket.debugAll) {
-                console.debug('ReconnectingWebSocket', 'attempt-connect', self.url);
+            if (self.debug || DevdReconnectingWebSocket.debugAll) {
+                console.debug('DevdReconnectingWebSocket', 'attempt-connect', self.url);
             }
 
             var localWs = ws;
             var timeout = setTimeout(function() {
-                if (self.debug || ReconnectingWebSocket.debugAll) {
-                    console.debug('ReconnectingWebSocket', 'connection-timeout', self.url);
+                if (self.debug || DevdReconnectingWebSocket.debugAll) {
+                    console.debug('DevdReconnectingWebSocket', 'connection-timeout', self.url);
                 }
                 timedOut = true;
                 localWs.close();
@@ -143,8 +143,8 @@
 
             ws.onopen = function(event) {
                 clearTimeout(timeout);
-                if (self.debug || ReconnectingWebSocket.debugAll) {
-                    console.debug('ReconnectingWebSocket', 'onopen', self.url);
+                if (self.debug || DevdReconnectingWebSocket.debugAll) {
+                    console.debug('DevdReconnectingWebSocket', 'onopen', self.url);
                 }
                 self.protocol = ws.protocol;
                 self.readyState = WebSocket.OPEN;
@@ -169,8 +169,8 @@
                     e.wasClean = event.wasClean;
                     eventTarget.dispatchEvent(e);
                     if (!reconnectAttempt && !timedOut) {
-                        if (self.debug || ReconnectingWebSocket.debugAll) {
-                            console.debug('ReconnectingWebSocket', 'onclose', self.url);
+                        if (self.debug || DevdReconnectingWebSocket.debugAll) {
+                            console.debug('DevdReconnectingWebSocket', 'onclose', self.url);
                         }
                         eventTarget.dispatchEvent(generateEvent('close'));
                     }
@@ -183,16 +183,16 @@
                 }
             };
             ws.onmessage = function(event) {
-                if (self.debug || ReconnectingWebSocket.debugAll) {
-                    console.debug('ReconnectingWebSocket', 'onmessage', self.url, event.data);
+                if (self.debug || DevdReconnectingWebSocket.debugAll) {
+                    console.debug('DevdReconnectingWebSocket', 'onmessage', self.url, event.data);
                 }
                 var e = generateEvent('message');
                 e.data = event.data;
                 eventTarget.dispatchEvent(e);
             };
             ws.onerror = function(event) {
-                if (self.debug || ReconnectingWebSocket.debugAll) {
-                    console.debug('ReconnectingWebSocket', 'onerror', self.url, event);
+                if (self.debug || DevdReconnectingWebSocket.debugAll) {
+                    console.debug('DevdReconnectingWebSocket', 'onerror', self.url, event);
                 }
                 eventTarget.dispatchEvent(generateEvent('error'));
             };
@@ -210,8 +210,8 @@
          */
         this.send = function(data) {
             if (ws) {
-                if (self.debug || ReconnectingWebSocket.debugAll) {
-                    console.debug('ReconnectingWebSocket', 'send', self.url, data);
+                if (self.debug || DevdReconnectingWebSocket.debugAll) {
+                    console.debug('DevdReconnectingWebSocket', 'send', self.url, data);
                 }
                 return ws.send(data);
             } else {
@@ -249,41 +249,40 @@
      * An event listener to be called when the WebSocket connection's readyState changes to OPEN;
      * this indicates that the connection is ready to send and receive data.
      */
-    ReconnectingWebSocket.prototype.onopen = function(event) {};
+    DevdReconnectingWebSocket.prototype.onopen = function(event) {};
     /** An event listener to be called when the WebSocket connection's readyState changes to CLOSED. */
-    ReconnectingWebSocket.prototype.onclose = function(event) {};
+    DevdReconnectingWebSocket.prototype.onclose = function(event) {};
     /** An event listener to be called when a connection begins being attempted. */
-    ReconnectingWebSocket.prototype.onconnecting = function(event) {};
+    DevdReconnectingWebSocket.prototype.onconnecting = function(event) {};
     /** An event listener to be called when a message is received from the server. */
-    ReconnectingWebSocket.prototype.onmessage = function(event) {};
+    DevdReconnectingWebSocket.prototype.onmessage = function(event) {};
     /** An event listener to be called when an error occurs. */
-    ReconnectingWebSocket.prototype.onerror = function(event) {};
+    DevdReconnectingWebSocket.prototype.onerror = function(event) {};
 
     /**
-     * Whether all instances of ReconnectingWebSocket should log debug messages.
-     * Setting this to true is the equivalent of setting all instances of ReconnectingWebSocket.debug to true.
+     * Whether all instances of DevdReconnectingWebSocket should log debug messages.
+     * Setting this to true is the equivalent of setting all instances of DevdReconnectingWebSocket.debug to true.
      */
-    ReconnectingWebSocket.debugAll = false;
+    DevdReconnectingWebSocket.debugAll = false;
 
-    ReconnectingWebSocket.CONNECTING = WebSocket.CONNECTING;
-    ReconnectingWebSocket.OPEN = WebSocket.OPEN;
-    ReconnectingWebSocket.CLOSING = WebSocket.CLOSING;
-    ReconnectingWebSocket.CLOSED = WebSocket.CLOSED;
+    DevdReconnectingWebSocket.CONNECTING = WebSocket.CONNECTING;
+    DevdReconnectingWebSocket.OPEN = WebSocket.OPEN;
+    DevdReconnectingWebSocket.CLOSING = WebSocket.CLOSING;
+    DevdReconnectingWebSocket.CLOSED = WebSocket.CLOSED;
 
-    window.ReconnectingWebSocket = ReconnectingWebSocket;
-})();
-
-
-(function() {
-    ws = new ReconnectingWebSocket(
+    window.DevdReconnectingWebSocket = DevdReconnectingWebSocket;
+    
+    ws = new DevdReconnectingWebSocket(
         "ws://" + window.location.host + "/.devd.livereload",
         null,
         {
+            debug: true,
             maxReconnectInterval: 3000,
         }
     )
     ws.onmessage = function(event) {
         if (event.data == "page") {
+            ws.close();
             location.reload();
         } else if (event.data == "css") {
             // This snippet pinched from quickreload, under the MIT license:
@@ -299,4 +298,8 @@
             });
         }
     }
+    window.addEventListener("beforeunload", function(){
+        ws.close();
+        return null;
+    });
 })();
