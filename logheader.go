@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/cortesi/devd/termlog"
+	"github.com/cortesi/termlog"
 	"github.com/fatih/color"
 )
 

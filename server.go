@@ -20,8 +20,8 @@ import (
 	"github.com/cortesi/devd/livereload"
 	"github.com/cortesi/devd/ricetemp"
 	"github.com/cortesi/devd/slowdown"
-	"github.com/cortesi/devd/termlog"
 	"github.com/cortesi/devd/timer"
+	"github.com/cortesi/termlog"
 )
 
 const (

@@ -19,7 +19,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/cortesi/devd/inject"
-	"github.com/cortesi/devd/termlog"
+	"github.com/cortesi/termlog"
 )
 
 const sniffLen = 512

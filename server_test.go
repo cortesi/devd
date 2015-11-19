@@ -7,7 +7,7 @@ import (
 	"github.com/GeertJohan/go.rice"
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/ricetemp"
-	"github.com/cortesi/devd/termlog"
+	"github.com/cortesi/termlog"
 )
 
 var formatURLTests = []struct {

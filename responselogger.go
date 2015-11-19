@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/cortesi/devd/termlog"
 	"github.com/cortesi/devd/timer"
+	"github.com/cortesi/termlog"
 	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 )

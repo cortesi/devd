@@ -16,7 +16,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/cortesi/devd/inject"
-	"github.com/cortesi/devd/termlog"
+	"github.com/cortesi/termlog"
 )
 
 // onExitFlushLoop is a callback set by tests to detect the state of the

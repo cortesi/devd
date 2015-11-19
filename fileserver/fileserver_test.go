@@ -29,7 +29,7 @@ import (
 	"github.com/GeertJohan/go.rice"
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/ricetemp"
-	"github.com/cortesi/devd/termlog"
+	"github.com/cortesi/termlog"
 )
 
 // ServeFile replies to the request with the contents of the named file or directory.

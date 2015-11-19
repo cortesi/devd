@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/cortesi/devd/termlog"
+	"github.com/cortesi/termlog"
 )
 
 var filterFilesTests = []struct {

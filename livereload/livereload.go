@@ -10,7 +10,7 @@ import (
 
 	"github.com/GeertJohan/go.rice"
 	"github.com/cortesi/devd/inject"
-	"github.com/cortesi/devd/termlog"
+	"github.com/cortesi/termlog"
 	"github.com/gorilla/websocket"
 )
 

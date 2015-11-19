@@ -6,7 +6,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/cortesi/devd/livereload"
 	"github.com/cortesi/devd/modd"
-	"github.com/cortesi/devd/termlog"
+	"github.com/cortesi/termlog"
 )
 
 const batchTime = time.Millisecond * 200

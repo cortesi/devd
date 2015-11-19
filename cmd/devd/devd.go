@@ -5,7 +5,7 @@ import (
 	"path"
 
 	"github.com/cortesi/devd"
-	"github.com/cortesi/devd/termlog"
+	"github.com/cortesi/termlog"
 	"github.com/mitchellh/go-homedir"
 	"github.com/toqueteos/webbrowser"
 	"gopkg.in/alecthomas/kingpin.v2"
