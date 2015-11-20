@@ -34,12 +34,16 @@ func (rl *ResponseLogWriter) logCode(code int, status string) {
 		codestr = fmt.Sprintf("%d %s", code, status)
 	}
 	cl := rl.Header().Get("content-length")
+	clstr := ""
 	if cl != "" {
-		if cli, err := strconv.Atoi(cl); err == nil {
-			cl = fmt.Sprintf("%s", humanize.Bytes(uint64(cli)))
+		cli, err := strconv.Atoi(cl)
+		if err != nil {
+			rl.Log.Warn("Invalid content-length header")
+		} else if cli > 0 {
+			clstr = fmt.Sprintf("%s", humanize.Bytes(uint64(cli)))
 		}
 	}
-	rl.Log.Say("<- %s %s", codestr, cl)
+	rl.Log.Say("<- %s %s", codestr, clstr)
 }
 
 // Header returns the header map that will be sent by WriteHeader.

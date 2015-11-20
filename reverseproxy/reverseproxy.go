@@ -4,6 +4,7 @@
 package reverseproxy
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/termlog"
+	"github.com/dustin/go-humanize"
 )
 
 // onExitFlushLoop is a callback set by tests to detect the state of the
@@ -155,6 +157,9 @@ func (p *ReverseProxy) ServeHTTPContext(
 		return
 	}
 	defer res.Body.Close()
+	if req.ContentLength > 0 {
+		log.Say(fmt.Sprintf("%s uploaded", humanize.Bytes(uint64(req.ContentLength))))
+	}
 
 	inject, err := p.Inject.Sniff(res.Body)
 	if err != nil {
@@ -172,14 +177,15 @@ func (p *ReverseProxy) ServeHTTPContext(
 	}
 	copyHeader(rw.Header(), res.Header)
 	rw.WriteHeader(res.StatusCode)
-	p.copyResponse(rw, inject)
+	p.copyResponse(ctx, rw, inject)
 }
 
 func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.ServeHTTPContext(context.Background(), w, r)
 }
 
-func (p *ReverseProxy) copyResponse(dst io.Writer, inject *inject.Injector) {
+func (p *ReverseProxy) copyResponse(ctx context.Context, dst io.Writer, inject *inject.Injector) {
+	log := termlog.FromContext(ctx)
 	if p.FlushInterval != 0 {
 		if wf, ok := dst.(writeFlusher); ok {
 			mlw := &maxLatencyWriter{
@@ -192,7 +198,10 @@ func (p *ReverseProxy) copyResponse(dst io.Writer, inject *inject.Injector) {
 			dst = mlw
 		}
 	}
-	inject.Copy(dst)
+	_, err := inject.Copy(dst)
+	if err != nil {
+		log.Shout("Error forwarding data: %s", err)
+	}
 }
 
 type writeFlusher interface {
