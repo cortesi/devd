@@ -84,7 +84,7 @@ func newSlowConn(conn net.Conn, listener *SlowListener) *SlowConn {
 // Read can be made to time out and return a Error with Timeout() == true
 // after a fixed time limit; see SetDeadline and SetReadDeadline.
 func (sc *SlowConn) Read(b []byte) (n int, err error) {
-	return sc.reader.reader.Read(b)
+	return sc.reader.Read(b)
 }
 
 // Write writes data to the connection.
