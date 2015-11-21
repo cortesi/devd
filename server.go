@@ -307,7 +307,7 @@ func (dd *Devd) Serve(address string, port int, certFile string, logger termlog.
 		hl, err = pickPort(address, portLow, portHigh, tlsEnabled)
 	}
 	if err != nil {
-		return fmt.Errorf("Could not bind to port: %s", err)
+		return err
 	}
 
 	if tlsConfig != nil {
