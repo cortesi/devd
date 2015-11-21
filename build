@@ -9,6 +9,16 @@ import subprocess
 
 
 DSTDIR = "./tmp"
+ARCHS = [
+    ("darwin", "amd64", "osx64", "tgz"),
+    ("windows", "amd64", "windows64", "zip"),
+    ("linux", "amd64", "linux64", "tgz"),
+    ("linux", "arm", "linuxARM", "tgz"),
+    ("netbsd", "amd64", "netbsd64", "tgz"),
+    ("netbsd", "arm", "netbsdARM", "tgz"),
+    ("openbsd", "amd64", "openbsd64", "tgz"),
+]
+
 
 def cleanrice(directory):
     for root, dirs, files in os.walk(directory):
@@ -36,16 +46,9 @@ def version():
     return p.communicate()[1].strip()
 
 
-ARCHS = [
-    ("darwin", "amd64", "osx64"),
-    ("windows", "amd64", "windows64"),
-    ("linux", "amd64", "linux64"),
-    ("linux", "arm", "linuxARM"),
-]
-
-
-def build(vers, goos, goarch, name):
+def build(vers, goos, goarch, name, archive):
     dst = os.path.join(DSTDIR, "devd-%s-%s"%(vers, name))
+    print "building to ", dst
     for f in glob.glob(dst + "*"):
         if os.path.isdir(f):
             shutil.rmtree(f)
@@ -63,7 +66,20 @@ def build(vers, goos, goarch, name):
         ],
         env = env
     )
-    subprocess.call(["tar", "-czvf", dst + ".tgz", dst])
+    if archive == "tgz":
+        print "\tmaking .tgz"
+        subprocess.Popen(
+            ["tar", "-czvf", dst + ".tgz", dst],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        ).communicate()
+    elif archive == "zip":
+        print "\tmaking .zip"
+        subprocess.Popen(
+            ["zip", "-r", dst + ".zip", dst],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        ).communicate()
 
 
 def main():
@@ -76,7 +92,7 @@ def main():
     print "Version is: ", v
 
     for i in ARCHS:
-        build(v, i[0], i[1], i[2])
+        build(v, *i)
 
     print "Cleaning static inclusions..."
     cleanrice(".")
