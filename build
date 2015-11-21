@@ -1,63 +1,85 @@
-#!/bin/sh
-set -e
+#!/usr/bin/env python
 
-function packages
-{
-    echo "Installing locally"
-    go install ./cmd/devd
-    VERSION=$(devd --version 2>&1 >/dev/null)
-    echo "Version is $VERSION"
+import contextlib
+import fnmatch
+import glob
+import os
+import shutil
+import subprocess
 
-    WINDIR="devd-$VERSION-windows64"
-    LINUXDIR="devd-$VERSION-linux64"
-    DARWINDIR="devd-$VERSION-osx64"
-    ARMDIR="devd-$VERSION-linux-arm"
 
-    rm -fr ./tmp/$WINDIR* ./tmp/$LINUXDIR* ./tmp/$DARWINDIR* ./tmp/$ARMDIR*
+DSTDIR = "./tmp"
 
-    echo "Building..."
+def cleanrice(directory):
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            if basename.endswith("rice-box.go"):
+                    filename = os.path.join(root, basename)
+                    print "\t", filename
+                    os.unlink(filename)
 
-    echo $DARWINDIR
-    mkdir -p ./tmp/$DARWINDIR
-    env GOOS=darwin GOARCH=amd64 go build -o ./tmp/$DARWINDIR/devd ./cmd/devd
 
-    echo $LINUXDIR
-    mkdir -p ./tmp/$LINUXDIR
-    env GOOS=linux GOARCH=amd64 go build -o ./tmp/$LINUXDIR/devd ./cmd/devd
+@contextlib.contextmanager
+def chdir(newdir):
+    curdir = os.getcwd()
+    try:
+        os.chdir(newdir)
+        yield
+    finally:
+        os.chdir(curdir)
 
-    echo $WINDIR
-    mkdir -p ./tmp/$WINDIR
-    env GOOS=windows GOARCH=amd64 go build -o ./tmp/$WINDIR/devd.exe ./cmd/devd
 
-    echo $ARMDIR
-    mkdir -p ./tmp/$ARMDIR
-    env GOOS=linux GOARCH=arm go build -o ./tmp/$ARMDIR/devd ./cmd/devd
+def version():
+    print "Installing locally"
+    subprocess.call(["go", "install", "./cmd/devd"])
+    p = subprocess.Popen(["devd", "--version"], stderr=subprocess.PIPE)
+    return p.communicate()[1].strip()
 
-    echo "Creating packages"
-    cd tmp
-    tar -czvf $DARWINDIR.tgz $DARWINDIR
-    tar -czvf $LINUXDIR.tgz $LINUXDIR
-    tar -czvf $ARMDIR.tgz $ARMDIR
-    zip -r "$WINDIR.zip" $WINDIR
-}
 
-function single
-{
-    go build ./cmd/devd
-}
+ARCHS = [
+    ("darwin", "amd64", "osx64"),
+    ("windows", "amd64", "windows64"),
+    ("linux", "amd64", "linux64"),
+    ("linux", "arm", "linuxARM"),
+]
 
-echo "Making static inclusions..."
-rice embed-go
-cd livereload
-rice embed-go
-cd ..
 
-if [ "$1" == "single" ]; then
-    single
-else
-    packages
-fi
+def build(vers, goos, goarch, name):
+    dst = os.path.join(DSTDIR, "devd-%s-%s"%(vers, name))
+    for f in glob.glob(dst + "*"):
+        if os.path.isdir(f):
+            shutil.rmtree(f)
+        else:
+            os.unlink(f)
+    os.makedirs(dst)
+    env = os.environ.copy()
+    env["GOOS"] = goos
+    env["GOARCH"] = goarch
+    subprocess.call(
+        [
+            "go", "build",
+            "-o", os.path.join(dst, "devd"),
+            "./cmd/devd"
+        ],
+        env = env
+    )
+    subprocess.call(["tar", "-czvf", dst + ".tgz", dst])
 
-echo "Removing static inclusions..."
-find . -name "*.rice-box.go" -print0 | xargs -0 rm
-find . -name "rice-box.go" -print0 | xargs -0 rm
+
+def main():
+    print "Making static inclusions..."
+    subprocess.call(["rice", "embed-go"])
+    with chdir("livereload"):
+        subprocess.call(["rice", "embed-go"])
+
+    v = version()
+    print "Version is: ", v
+
+    for i in ARCHS:
+        build(v, i[0], i[1], i[2])
+
+    print "Cleaning static inclusions..."
+    cleanrice(".")
+
+
+main()
