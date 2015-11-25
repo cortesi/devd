@@ -5,7 +5,7 @@ import (
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/cortesi/devd/livereload"
-	"github.com/cortesi/devd/modd"
+	"github.com/cortesi/modd"
 	"github.com/cortesi/termlog"
 )
 
