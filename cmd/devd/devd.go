@@ -205,7 +205,10 @@ func main() {
 		logger,
 		func(url string) {
 			if *openBrowser {
-				webbrowser.Open(url)
+				err := webbrowser.Open(url)
+				if err != nil {
+					kingpin.Fatalf("Failed to open browser: %s", err)
+				}
 			}
 		},
 	)

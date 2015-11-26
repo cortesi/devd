@@ -17,7 +17,7 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 	case *filesystemEndpoint:
 		ep := *r.Endpoint.(*filesystemEndpoint)
 		modchan := make(chan modd.Mod, 1)
-		err := modd.Watch(string(ep), batchTime, modchan)
+		err := modd.Watch([]string{string(ep)}, batchTime, modchan)
 		if err != nil {
 			return err
 		}
@@ -60,7 +60,7 @@ func WatchPaths(paths, excludePatterns []string, reloader livereload.Reloader, l
 	ch := make(chan []string, 1)
 	for _, path := range paths {
 		modchan := make(chan modd.Mod, 1)
-		err := modd.Watch(path, batchTime, modchan)
+		err := modd.Watch([]string{path}, batchTime, modchan)
 		if err != nil {
 			return err
 		}
