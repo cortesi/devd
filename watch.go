@@ -3,7 +3,6 @@ package devd
 import (
 	"time"
 
-	"github.com/bmatcuk/doublestar"
 	"github.com/cortesi/devd/livereload"
 	"github.com/cortesi/modd"
 	"github.com/cortesi/termlog"
@@ -17,42 +16,17 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 	case *filesystemEndpoint:
 		ep := *r.Endpoint.(*filesystemEndpoint)
 		modchan := make(chan modd.Mod, 1)
-		err := modd.Watch([]string{string(ep)}, batchTime, modchan)
+		err := modd.Watch([]string{string(ep)}, excludePatterns, batchTime, modchan)
 		if err != nil {
 			return err
 		}
 		go func() {
 			for mod := range modchan {
-				files := filterFiles(mod.All(), excludePatterns, log)
-				ch <- files
+				ch <- mod.All()
 			}
 		}()
 	}
 	return nil
-}
-
-// Determine if a file should be included, based on the given exclude paths.
-func shouldInclude(file string, excludePatterns []string, log termlog.Logger) bool {
-	for _, pattern := range excludePatterns {
-		match, err := doublestar.Match(pattern, file)
-		if err != nil {
-			log.Warn("Error matching pattern '%s': %s", pattern, err)
-		} else if match {
-			return false
-		}
-	}
-	return true
-}
-
-// Filter out the files that match the given exclude patterns.
-func filterFiles(files, excludePatterns []string, log termlog.Logger) []string {
-	ret := []string{}
-	for _, file := range files {
-		if shouldInclude(file, excludePatterns, log) {
-			ret = append(ret, file)
-		}
-	}
-	return ret
 }
 
 // WatchPaths watches a set of paths, and broadcasts changes through reloader.
@@ -60,16 +34,13 @@ func WatchPaths(paths, excludePatterns []string, reloader livereload.Reloader, l
 	ch := make(chan []string, 1)
 	for _, path := range paths {
 		modchan := make(chan modd.Mod, 1)
-		err := modd.Watch([]string{path}, batchTime, modchan)
+		err := modd.Watch([]string{path}, excludePatterns, batchTime, modchan)
 		if err != nil {
 			return err
 		}
 		go func() {
 			for mod := range modchan {
-				files := filterFiles(mod.All(), excludePatterns, log)
-				if len(files) > 0 {
-					ch <- files
-				}
+				ch <- mod.All()
 			}
 		}()
 	}
