@@ -6,8 +6,11 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	"os"
+	"os/signal"
 	"regexp"
 	"strings"
+	"syscall"
 	"time"
 
 	"golang.org/x/net/context"
@@ -137,16 +140,20 @@ type Devd struct {
 	DownKbps uint
 	UpKbps   uint
 
-	// Livereload
+	// Livereload and watch static routes
 	LivereloadRoutes bool
-	WatchPaths       []string
-	Excludes         []string
+	// Livereload, but don't watch static routes
+	Livereload bool
+	WatchPaths []string
+	Excludes   []string
 
 	// Logging
 	IgnoreLogs []*regexp.Regexp
 
 	// Password protection
 	Credentials *Credentials
+
+	lrserver *livereload.Server
 }
 
 // WrapHandler wraps an httpctx.Handler in the paraphernalia needed by devd for
@@ -181,7 +188,7 @@ func (dd *Devd) WrapHandler(log termlog.Logger, next httpctx.Handler) http.Handl
 
 // HasLivereload tells us if liverload is enabled
 func (dd *Devd) HasLivereload() bool {
-	if dd.LivereloadRoutes || len(dd.WatchPaths) > 0 {
+	if dd.Livereload || dd.LivereloadRoutes || len(dd.WatchPaths) > 0 {
 		return true
 	}
 	return false
@@ -263,6 +270,7 @@ func (dd *Devd) Router(logger termlog.Logger, templates *template.Template) (htt
 				return nil, fmt.Errorf("Could not watch path for livereload: %s", err)
 			}
 		}
+		dd.lrserver = lr
 	}
 	if !hasGlobal {
 		mux.Handle(
@@ -319,6 +327,19 @@ func (dd *Devd) Serve(address string, port int, certFile string, logger termlog.
 	logger.Say("Listening on %s (%s)", url, hl.Addr().String())
 	server := &http.Server{Addr: hl.Addr().String(), Handler: mux}
 	callback(url)
+
+	if dd.HasLivereload() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, syscall.SIGHUP)
+		go func() {
+			for {
+				<-c
+				logger.Say("Received signal - reloading")
+				dd.lrserver.Reload([]string{"*"})
+			}
+		}()
+	}
+
 	err = server.Serve(hl)
 	logger.Shout("Server stopped: %v", err)
 	return nil

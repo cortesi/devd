@@ -29,6 +29,15 @@ devd -w ./src http://localhost:8080
 ```
 
 
+# Using devd with modd
+
+```modd -p
+    -p "go install ./cmd/server"
+    -d "server -p 8080"
+    -d "devd -L http://localhost:8080"
+```
+
+
 # Features
 
 
@@ -83,6 +92,11 @@ specification](#excluding-files-from-livereload). The following command
 disables livereload for all files with the ".less" extension:
 
 <pre class="terminal">devd -x "**.less" -l .</pre>
+
+When livereload is enabled (with the **-L**, **-l** or **-w** flags), devd
+responds to a SIGHUP by issuing a livereload notice to all connected browsers.
+This allows external tools, like devd's sister project **modd**, to trigger
+livereload. If livereload is not enabled, SIGHUP causes the daemon to exit.
 
 
 ### Reverse proxy + static file server + flexible routing
@@ -159,7 +173,7 @@ that they don't start with a leading **/**. So, this route serves the
 static/assets=./static
 ```
 
-Reverse proxy specifcations are similar, but the endpoint specification is a
+Reverse proxy specifications are similar, but the endpoint specification is a
 URL. The following serves a local URL from the root **app.devd.io/login**:
 
 ```
