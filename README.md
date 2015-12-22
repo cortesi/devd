@@ -31,7 +31,8 @@ devd -w ./src http://localhost:8080
 
 # Using devd with modd
 
-```modd -p
+```
+modd -p
     -p "go install ./cmd/server"
     -d "server -p 8080"
     -d "devd -L http://localhost:8080"
