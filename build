@@ -58,7 +58,7 @@ def build(vers, goos, goarch, name, archive):
     env = os.environ.copy()
     env["GOOS"] = goos
     env["GOARCH"] = goarch
-    subprocess.call(
+    subprocess.check_call(
         [
             "go", "build",
             "-o", os.path.join(dst, "devd"),
