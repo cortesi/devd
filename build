@@ -19,6 +19,21 @@ ARCHS = [
     ("openbsd", "amd64", "openbsd64", "tgz"),
 ]
 
+def install_dependencies():
+    print("installing dependencies")
+    deps = ['github.com/GeertJohan/go.rice',
+            'github.com/GeertJohan/go.rice/rice',
+            'github.com/cortesi/modd',
+            'github.com/dustin/go-humanize',
+            'github.com/goji/httpauth',
+            'github.com/gorilla/websocket',
+            'github.com/juju/ratelimit',
+            'github.com/mitchellh/go-homedir',
+            'github.com/toqueteos/webbrowser',
+            'gopkg.in/alecthomas/kingpin.v2']
+
+    for dep in deps:
+        subprocess.check_call(["go", "get", dep])
 
 def cleanrice(directory):
     for root, dirs, files in os.walk(directory):
@@ -83,6 +98,8 @@ def build(vers, goos, goarch, name, archive):
 
 
 def main():
+    install_dependencies()
+
     print "Making static inclusions..."
     subprocess.call(["rice", "embed-go"])
     with chdir("livereload"):
