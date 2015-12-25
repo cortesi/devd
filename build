@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
+from __future__ import print_function
 import contextlib
-import fnmatch
 import glob
 import os
 import shutil
@@ -25,7 +25,7 @@ def cleanrice(directory):
         for basename in files:
             if basename.endswith("rice-box.go"):
                     filename = os.path.join(root, basename)
-                    print "\t", filename
+                    print("\t", filename)
                     os.unlink(filename)
 
 
@@ -40,15 +40,15 @@ def chdir(newdir):
 
 
 def version():
-    print "Installing locally"
+    print("Installing locally")
     subprocess.call(["go", "install", "./cmd/devd"])
     p = subprocess.Popen(["devd", "--version"], stderr=subprocess.PIPE)
     return p.communicate()[1].strip()
 
 
 def build(vers, goos, goarch, name, archive):
-    dst = os.path.join(DSTDIR, "devd-%s-%s"%(vers, name))
-    print "building to ", dst
+    dst = os.path.join(DSTDIR, "devd-%s-%s" % (vers, name))
+    print("building to ", dst)
     for f in glob.glob(dst + "*"):
         if os.path.isdir(f):
             shutil.rmtree(f)
@@ -64,17 +64,17 @@ def build(vers, goos, goarch, name, archive):
             "-o", os.path.join(dst, "devd"),
             "./cmd/devd"
         ],
-        env = env
+        env=env
     )
     if archive == "tgz":
-        print "\tmaking .tgz"
+        print("\tmaking .tgz")
         subprocess.Popen(
             ["tar", "-czvf", dst + ".tgz", dst],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         ).communicate()
     elif archive == "zip":
-        print "\tmaking .zip"
+        print("\tmaking .zip")
         subprocess.Popen(
             ["zip", "-r", dst + ".zip", dst],
             stdout=subprocess.PIPE,
@@ -83,18 +83,18 @@ def build(vers, goos, goarch, name, archive):
 
 
 def main():
-    print "Making static inclusions..."
+    print("Making static inclusions...")
     subprocess.call(["rice", "embed-go"])
     with chdir("livereload"):
         subprocess.call(["rice", "embed-go"])
 
     v = version()
-    print "Version is: ", v
+    print("Version is: ", v)
 
     for i in ARCHS:
         build(v, *i)
 
-    print "Cleaning static inclusions..."
+    print("Cleaning static inclusions...")
     cleanrice(".")
 
 
