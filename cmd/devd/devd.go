@@ -27,6 +27,10 @@ func main() {
 		Default("").
 		ExistingFile()
 
+	forceColor := kingpin.Flag("color", "Enable colour output, even if devd is not connected to a terminal").
+		Short('C').
+		Bool()
+
 	downKbps := kingpin.Flag(
 		"down",
 		"Throttle downstream from the client to N kilobytes per second",
@@ -92,6 +96,11 @@ func main() {
 
 	tls := kingpin.Flag("tls", "Serve TLS with auto-generated self-signed certificate (~/.devd.crt)").
 		Short('s').
+		Default("false").
+		Bool()
+
+	noTimestamps := kingpin.Flag("notimestamps", "Disable timestamps in output").
+		Short('t').
 		Default("false").
 		Bool()
 
@@ -187,6 +196,12 @@ func main() {
 	}
 	if *logHeaders {
 		logger.Enable("headers")
+	}
+	if *forceColor {
+		logger.Color(true)
+	}
+	if *noTimestamps {
+		logger.TimeFmt = ""
 	}
 
 	if *tls {
