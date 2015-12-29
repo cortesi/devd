@@ -63,6 +63,10 @@ func main() {
 		Default("false").
 		Bool()
 
+	moddMode := kingpin.Flag("modd", "Modd is our parent - synonym for -LCt").
+		Short('m').
+		Bool()
+
 	latency := kingpin.Flag("latency", "Add N milliseconds of round-trip latency").
 		PlaceHolder("N").
 		Short('n').
@@ -145,6 +149,12 @@ func main() {
 	kingpin.Version(devd.Version)
 
 	kingpin.Parse()
+
+	if *moddMode {
+		*forceColor = true
+		*noTimestamps = true
+		*livereloadNaked = true
+	}
 
 	realAddr := *address
 	if *allInterfaces {
