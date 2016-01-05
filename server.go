@@ -158,7 +158,7 @@ type Devd struct {
 
 // WrapHandler wraps an httpctx.Handler in the paraphernalia needed by devd for
 // logging, latency, and so forth.
-func (dd *Devd) WrapHandler(log termlog.Logger, next httpctx.Handler) http.Handler {
+func (dd *Devd) WrapHandler(log termlog.TermLog, next httpctx.Handler) http.Handler {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		revertOriginalHost(r)
 		timr := timer.Timer{}
@@ -234,7 +234,7 @@ func HandleNotFound(templates *template.Template) httpctx.Handler {
 }
 
 // Router constructs the main Devd router that serves all requests
-func (dd *Devd) Router(logger termlog.Logger, templates *template.Template) (http.Handler, error) {
+func (dd *Devd) Router(logger termlog.TermLog, templates *template.Template) (http.Handler, error) {
 	mux := http.NewServeMux()
 	hasGlobal := false
 
@@ -289,7 +289,7 @@ func (dd *Devd) Router(logger termlog.Logger, templates *template.Template) (htt
 
 // Serve starts the devd server. The callback is called with the serving URL
 // just before service starts.
-func (dd *Devd) Serve(address string, port int, certFile string, logger termlog.Logger, callback func(string)) error {
+func (dd *Devd) Serve(address string, port int, certFile string, logger termlog.TermLog, callback func(string)) error {
 	templates, err := ricetemp.MakeTemplates(rice.MustFindBox("templates"))
 	if err != nil {
 		return fmt.Errorf("Error loading templates: %s", err)
