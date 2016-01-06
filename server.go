@@ -173,7 +173,12 @@ func (dd *Devd) WrapHandler(log termlog.TermLog, next httpctx.Handler) http.Hand
 		}
 		timr.RequestHeaders()
 		time.Sleep(time.Millisecond * time.Duration(dd.Latency))
-		sublog.Say("%s %s", r.Method, r.URL)
+
+		dpath := r.URL.String()
+		if !strings.HasPrefix(dpath, "/") {
+			dpath = "/" + dpath
+		}
+		sublog.Say("%s %s", r.Method, dpath)
 		LogHeader(sublog, r.Header)
 		ctx := timr.NewContext(context.Background())
 		ctx = termlog.NewContext(ctx, sublog)
