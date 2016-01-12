@@ -140,6 +140,9 @@ type Devd struct {
 	DownKbps uint
 	UpKbps   uint
 
+	// Add headers
+	AddHeaders *http.Header
+
 	// Livereload and watch static routes
 	LivereloadRoutes bool
 	// Livereload, but don't watch static routes
@@ -182,6 +185,11 @@ func (dd *Devd) WrapHandler(log termlog.TermLog, next httpctx.Handler) http.Hand
 		LogHeader(sublog, r.Header)
 		ctx := timr.NewContext(context.Background())
 		ctx = termlog.NewContext(ctx, sublog)
+		for h, vals := range *dd.AddHeaders {
+			for _, v := range vals {
+				w.Header().Set(h, v)
+			}
+		}
 		next.ServeHTTPContext(
 			ctx,
 			&ResponseLogWriter{Log: sublog, Resp: w, Timer: &timr},
@@ -191,7 +199,7 @@ func (dd *Devd) WrapHandler(log termlog.TermLog, next httpctx.Handler) http.Hand
 	return h
 }
 
-// HasLivereload tells us if liverload is enabled
+// HasLivereload tells us if livereload is enabled
 func (dd *Devd) HasLivereload() bool {
 	if dd.Livereload || dd.LivereloadRoutes || len(dd.WatchPaths) > 0 {
 		return true

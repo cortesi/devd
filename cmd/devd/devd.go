@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"os"
 	"path"
 
@@ -127,6 +128,11 @@ func main() {
 		Short('w').
 		Strings()
 
+	cors := kingpin.Flag("crossdomain", "Set the CORS header Access-Control-Allowed: *").
+		Short('X').
+		Default("false").
+		Bool()
+
 	excludes := kingpin.Flag("exclude", "Glob pattern for files to exclude from livereload").
 		PlaceHolder("PATTERN").
 		Short('x').
@@ -171,11 +177,18 @@ func main() {
 		}
 	}
 
+	hdrs := make(http.Header)
+	if *cors {
+		hdrs.Set("Access-Control-Allow-Origin", "*")
+	}
+
 	dd := devd.Devd{
 		// Shaping
 		Latency:  *latency,
 		DownKbps: *downKbps,
 		UpKbps:   *upKbps,
+
+		AddHeaders: &hdrs,
 
 		// Livereload
 		LivereloadRoutes: *livereloadRoutes,
