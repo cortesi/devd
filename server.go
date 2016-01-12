@@ -185,9 +185,11 @@ func (dd *Devd) WrapHandler(log termlog.TermLog, next httpctx.Handler) http.Hand
 		LogHeader(sublog, r.Header)
 		ctx := timr.NewContext(context.Background())
 		ctx = termlog.NewContext(ctx, sublog)
-		for h, vals := range *dd.AddHeaders {
-			for _, v := range vals {
-				w.Header().Set(h, v)
+		if dd.AddHeaders != nil {
+			for h, vals := range *dd.AddHeaders {
+				for _, v := range vals {
+					w.Header().Set(h, v)
+				}
 			}
 		}
 		next.ServeHTTPContext(
