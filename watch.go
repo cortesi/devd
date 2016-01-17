@@ -16,13 +16,16 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 	case *filesystemEndpoint:
 		ep := *r.Endpoint.(*filesystemEndpoint)
 		modchan := make(chan modd.Mod, 1)
-		err := modd.Watch([]string{string(ep)}, excludePatterns, batchTime, modchan)
+		err := modd.Watch([]string{string(ep)}, batchTime, modchan)
 		if err != nil {
 			return err
 		}
 		go func() {
 			for mod := range modchan {
-				ch <- mod.All()
+				mod.Filter([]string{"*"}, excludePatterns)
+				if !mod.Empty() {
+					ch <- mod.All()
+				}
 			}
 		}()
 	}
@@ -34,13 +37,16 @@ func WatchPaths(paths, excludePatterns []string, reloader livereload.Reloader, l
 	ch := make(chan []string, 1)
 	for _, path := range paths {
 		modchan := make(chan modd.Mod, 1)
-		err := modd.Watch([]string{path}, excludePatterns, batchTime, modchan)
+		err := modd.Watch([]string{path}, batchTime, modchan)
 		if err != nil {
 			return err
 		}
 		go func() {
 			for mod := range modchan {
-				ch <- mod.All()
+				mod.Filter([]string{"*"}, excludePatterns)
+				if !mod.Empty() {
+					ch <- mod.All()
+				}
 			}
 		}()
 	}
