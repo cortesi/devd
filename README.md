@@ -31,18 +31,32 @@ devd -w ./src http://localhost:8080
 
 # Using devd with modd
 
-[Modd](https://github.com/cortesi/modd) is a dev tool that runs commands and manages daemons in response to filesystem changes. Devd can be used in conjunction with modd to rebuild a project and reload a browser when filesystem changes are detected. See the modd project for details on advanced configurations to detect and react to specific changes.
+[Modd](https://github.com/cortesi/modd) is devd's sister project - a dev tool
+that runs commands and manages daemons in response to filesystem changes. Devd
+can be used with modd to rebuild a project and reload the browser when
+filesystem changes are detected.
+
+Here's a quick example of a simple *modd.conf* file to illustrate.
 
 ```
-modd -p
-    -p "go install ./cmd/server"
-    -d "server -p 8080"
-    -d "devd -L http://localhost:8080"
+./src/** {
+    prep: render ./src ./rendered
+}
+
+./rendered/*.css ./rendered/*.html {
+    daemon: devd -m ./rendered
+}
 ```
+
+The first block runs the *render* script whenever anything in the *src*
+directory changes. The second block starts a devd instance, and triggers
+livereload with a signal whenever a .css or .html file in the *rendered*
+directory changes.
+
+See the [modd](https://github.com/cortesi/modd) project page for details.
 
 
 # Features
-
 
 ### Cross-platform and self-contained
 
