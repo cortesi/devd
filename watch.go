@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/cortesi/devd/livereload"
-	"github.com/cortesi/modd"
+	"github.com/cortesi/modd/watch"
 	"github.com/cortesi/termlog"
 )
 
@@ -15,8 +15,8 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 	switch r.Endpoint.(type) {
 	case *filesystemEndpoint:
 		ep := *r.Endpoint.(*filesystemEndpoint)
-		modchan := make(chan *modd.Mod, 1)
-		_, err := modd.Watch([]string{string(ep)}, batchTime, modchan)
+		modchan := make(chan *watch.Mod, 1)
+		_, err := watch.Watch([]string{string(ep)}, batchTime, modchan)
 		if err != nil {
 			return err
 		}
@@ -36,8 +36,8 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 func WatchPaths(paths, excludePatterns []string, reloader livereload.Reloader, log termlog.Logger) error {
 	ch := make(chan []string, 1)
 	for _, path := range paths {
-		modchan := make(chan *modd.Mod, 1)
-		_, err := modd.Watch([]string{path}, batchTime, modchan)
+		modchan := make(chan *watch.Mod, 1)
+		_, err := watch.Watch([]string{path}, batchTime, modchan)
 		if err != nil {
 			return err
 		}

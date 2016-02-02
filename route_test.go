@@ -156,7 +156,7 @@ func TestRouteHandler(t *testing.T) {
 
 func TestRouteCollection(t *testing.T) {
 	var m = make(RouteCollection)
-	m.String()
+	_ = m.String()
 	err := m.Add("foo=bar")
 	if err != nil {
 		t.Error(err)
