@@ -1,5 +1,7 @@
 
-[![Build Status](https://drone.io/github.com/cortesi/devd/status.png)](https://drone.io/github.com/cortesi/devd/latest)
+[![Travis Build Status](https://travis-ci.org/cortesi/devd.svg?branch=master)](https://travis-ci.org/cortesi/devd)
+[![Build status](https://ci.appveyor.com/api/projects/status/5tg8en127chbuve6/branch/master?svg=true)](https://ci.appveyor.com/project/cortesi/devd/branch/master)
+
 
 
 # devd: a local webserver for developers
