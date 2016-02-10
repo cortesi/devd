@@ -1,0 +1,22 @@
+version: "{build}"
+
+os: Windows Server 2012 R2
+
+clone_folder: c:\gopath\src\github.com\cortesi\devd
+
+environment:
+  GOPATH: c:\gopath
+  GO15VENDOREXPERIMENT: 1
+
+install:
+  - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
+  - go version
+  - go env
+  - go get -d ./...
+
+build_script:
+  - go test -race -v ./...
+
+test: off
+
+deploy: off
