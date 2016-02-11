@@ -23,6 +23,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -540,6 +541,7 @@ func TestServeContent(t *testing.T) {
 		etag        string
 	}
 	servec := make(chan serveParam, 1)
+	lock := sync.Mutex{}
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := <-servec
 		if p.etag != "" {
@@ -548,6 +550,8 @@ func TestServeContent(t *testing.T) {
 		if p.contentType != "" {
 			w.Header().Set("Content-Type", p.contentType)
 		}
+		lock.Lock()
+		defer lock.Unlock()
 		ServeContent(w, r, p.name, p.modtime, p.content)
 	}))
 	defer ts.Close()
@@ -632,7 +636,11 @@ func TestServeContent(t *testing.T) {
 			if err != nil {
 				t.Fatalf("test %q: %v", testName, err)
 			}
-			defer f.Close()
+			defer func() {
+				lock.Lock()
+				defer lock.Unlock()
+				f.Close()
+			}()
 			content = f
 		} else {
 			content = tt.content

@@ -25,7 +25,6 @@ func main() {
 	certFile := kingpin.Flag("cert", "Certificate bundle file - enables TLS").
 		Short('c').
 		PlaceHolder("PATH").
-		Default("").
 		ExistingFile()
 
 	forceColor := kingpin.Flag("color", "Enable colour output, even if devd is not connected to a terminal").
