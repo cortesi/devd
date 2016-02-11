@@ -1,5 +1,20 @@
 
-v0.3: 12 November 2015
+# v0.4: 12 February 2016
+
+* Add support for [modd](https://github.com/cortesi/modd), with the -m flag.
+* Add -X flag to set Access-Control-Allow-Origin: * on all responses, allowing
+  the use of multiple .devd.io domains in testing.
+* Add -L flag, which turns on livereload but doesn't trigger on modification,
+  allowing livereload to be driven by external tools.
+* Add -C flag to force colour output, even if we're not attachd to a terminal.
+* Add -t flag to disable timestamps.
+* Silence console errors due to a stupid long-standing Firefox bug.
+* Fix throttling of data upload.
+* Improve display of content sizes.
+* Add distributions for OpenBSD and NetBSD.
+
+
+# v0.3: 12 November 2015
 
 * -s (--tls) Generate a self-signed certificate, and enable TLS. The cert
   bundle is stored in ~/.devd.cert
@@ -12,7 +27,7 @@ v0.3: 12 November 2015
   traffic.
 
 
-v0.2
+# v0.2
 
 * -x (--exclude) flag to exclude files from livereload.
 * -P (--password) flag for quick HTTP Basic password protection.
