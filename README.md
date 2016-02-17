@@ -241,6 +241,6 @@ use case, development servers will usually be running locally, often with
 self-signed certificates for testing. You shouldn't use devd in cases where
 upstream cert validation matters.
 
-The *X-Forarded-Host* header is set to the devd server's address for reverse
+The *X-Forwarded-Host* header is set to the devd server's address for reverse
 proxied traffic. You might need to enable support for this in your application
 for redirects and the like to work correctly.
