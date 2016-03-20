@@ -151,6 +151,7 @@ func main() {
 		`,
 	).Required().Strings()
 
+	kingpin.CommandLine.HelpFlag.Short('h')
 	kingpin.Version(devd.Version)
 
 	kingpin.Parse()
