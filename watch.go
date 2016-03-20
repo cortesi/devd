@@ -16,7 +16,7 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 	case *filesystemEndpoint:
 		ep := *r.Endpoint.(*filesystemEndpoint)
 		modchan := make(chan *watch.Mod, 1)
-		_, err := watch.Watch([]string{string(ep)}, batchTime, modchan)
+		_, err := watch.Watch([]string{string(ep) + "/..."}, batchTime, modchan)
 		if err != nil {
 			return err
 		}
