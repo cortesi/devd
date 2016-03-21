@@ -4,6 +4,7 @@
 package reverseproxy
 
 import (
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net"
@@ -156,12 +157,28 @@ func (p *ReverseProxy) ServeHTTPContext(
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	defer res.Body.Close()
+	var rc io.ReadCloser = res.Body
+	if _, ok := res.Header["Content-Encoding"]; ok {
+		gzipped := "gzip" == res.Header.Get("Content-Encoding")
+		if gzipped {
+			rc, err = gzip.NewReader(rc)
+			defer rc.Close()
+			res.Header.Del("Content-Encoding")
+
+			if nil != err {
+				log.Shout("Error building gzip reader: " + err.Error())
+				return
+			}
+		}
+	}
+
 	if req.ContentLength > 0 {
 		log.Say(fmt.Sprintf("%s uploaded", humanize.Bytes(uint64(req.ContentLength))))
 	}
 
-	inject, err := p.Inject.Sniff(res.Body)
+	inject, err := p.Inject.Sniff(rc)
 	if err != nil {
 		log.Shout("reverse proxy error: %v", err)
 		rw.WriteHeader(http.StatusInternalServerError)
