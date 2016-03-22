@@ -271,9 +271,14 @@
     DevdReconnectingWebSocket.CLOSED = WebSocket.CLOSED;
 
     window.DevdReconnectingWebSocket = DevdReconnectingWebSocket;
-    
+
+    var proto = "ws://";
+    if (window.location.protocol == "https:") {
+        proto = "wss://";
+    }
+
     ws = new DevdReconnectingWebSocket(
-        "ws://" + window.location.host + "/.devd.livereload",
+        proto + window.location.host + "/.devd.livereload",
         null,
         {
             debug: true,
