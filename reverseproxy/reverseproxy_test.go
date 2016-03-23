@@ -37,6 +37,12 @@ func TestReverseProxy(t *testing.T) {
 		if g, e := r.Host, "some-name"; g == e {
 			t.Errorf("backend got original Host header %q, expected over-written", g)
 		}
+		if acceptEncoding := r.Header.Get("Accept-Encoding"); acceptEncoding != "identity" {
+			t.Errorf(
+				"backend got unexpected  or no Accept-Encoding header: %q, expected \"identity\"",
+				acceptEncoding,
+			)
+		}
 		w.Header().Set("X-Foo", "bar")
 		http.SetCookie(w, &http.Cookie{Name: "flavor", Value: "chocolateChip"})
 		w.WriteHeader(backendStatus)
