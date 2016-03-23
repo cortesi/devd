@@ -22,9 +22,12 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 		}
 		go func() {
 			for mod := range modchan {
-				mod.Filter([]string{"*"}, excludePatterns)
-				if !mod.Empty() {
-					ch <- mod.All()
+				filteredMod, err := mod.Filter([]string{"**/*"}, excludePatterns)
+				if err != nil {
+					log.Shout("Error filtering watches: %s", err)
+				}
+				if !filteredMod.Empty() {
+					ch <- filteredMod.All()
 				}
 			}
 		}()
@@ -43,9 +46,12 @@ func WatchPaths(paths, excludePatterns []string, reloader livereload.Reloader, l
 		}
 		go func() {
 			for mod := range modchan {
-				mod.Filter([]string{"*"}, excludePatterns)
-				if !mod.Empty() {
-					ch <- mod.All()
+				filteredMod, err := mod.Filter([]string{"**/*"}, excludePatterns)
+				if err != nil {
+					log.Shout("Error filtering watches: %s", err)
+				}
+				if !filteredMod.Empty() {
+					ch <- filteredMod.All()
 				}
 			}
 		}()
