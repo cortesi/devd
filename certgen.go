@@ -57,20 +57,34 @@ func GenerateCert(dst string) error {
 	if err != nil {
 		return fmt.Errorf("Could not open %s for writing: %s", dst, err)
 	}
-	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
-	certOut.Close()
+	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	if err != nil {
+		return err
+	}
+
+	err = certOut.Close()
+	if err != nil {
+		return err
+	}
 
 	keyOut, err := os.OpenFile(dst, os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return fmt.Errorf("Could not open %s for writing: %s", dst, err)
 	}
-	pem.Encode(
+	err = pem.Encode(
 		keyOut,
 		&pem.Block{
 			Type:  "RSA PRIVATE KEY",
 			Bytes: x509.MarshalPKCS1PrivateKey(priv),
 		},
 	)
-	keyOut.Close()
+	if err != nil {
+		return err
+	}
+
+	err = keyOut.Close()
+	if err != nil {
+		return err
+	}
 	return nil
 }
