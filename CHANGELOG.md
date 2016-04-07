@@ -1,4 +1,14 @@
 
+# v0.5: 8 April 2016
+
+* Increase the size of the initial file chunk we inspect or a </head> tag for
+livereload injection. Fixes some rare cases where pages with a lot of header
+data didn't trigger livereload.
+* Request that upstream servers do not return compressed data, allowing
+livereload script injection. (thanks Thomas B Homburg <thomas@homburg.dk>)
+* Bugfix: Fix recursive file monitoring for static routes
+
+
 # v0.4: 12 February 2016
 
 * Add support for [modd](https://github.com/cortesi/modd), with the -m flag.
