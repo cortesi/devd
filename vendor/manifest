@@ -32,6 +32,20 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/alecthomas/template",
+			"repository": "https://github.com/alecthomas/template",
+			"revision": "a0175ee3bccc567396460bf5acd36800cb10c49c",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/alecthomas/units",
+			"repository": "https://github.com/alecthomas/units",
+			"revision": "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a",
+			"branch": "master",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/bmatcuk/doublestar",
 			"repository": "https://github.com/bmatcuk/doublestar",
 			"revision": "ec3b4af762f792cb93bf2518ff9ac408dbdc2b4e",
@@ -117,9 +131,23 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/mitchellh/go-homedir",
+			"repository": "https://github.com/mitchellh/go-homedir",
+			"revision": "981ab348d865cf048eb7d17e78ac7192632d8415",
+			"branch": "master",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/rjeczalik/notify",
 			"repository": "https://github.com/rjeczalik/notify",
 			"revision": "5dd6205716539662f8f14ab513552b41eab69d5d",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/toqueteos/webbrowser",
+			"repository": "https://github.com/toqueteos/webbrowser",
+			"revision": "21fc9f95c83442fd164094666f7cb4f9fdd56cd6",
 			"branch": "master",
 			"notests": true
 		},
@@ -137,6 +165,13 @@
 			"revision": "9d8ef8d73b53840886e4a772c72f2b7d396cb37c",
 			"branch": "master",
 			"path": "/context",
+			"notests": true
+		},
+		{
+			"importpath": "gopkg.in/alecthomas/kingpin.v2",
+			"repository": "https://gopkg.in/alecthomas/kingpin.v2",
+			"revision": "8cccfa8eb2e3183254457fb1749b2667fbc364c7",
+			"branch": "master",
 			"notests": true
 		}
 	]
