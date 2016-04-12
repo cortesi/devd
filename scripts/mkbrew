@@ -1,0 +1,80 @@
+#!/usr/bin/env python2
+import subprocess
+import sys
+import requests
+import hashlib
+
+TEMPLATE = """
+require "language/go"
+
+class Devd < Formula
+  desc "Local webserver for developers"
+  homepage "https://github.com/cortesi/devd"
+  url "https://github.com/cortesi/devd/archive/{version}.tar.gz"
+  sha256 "{hash}"
+  revision 1
+
+  bottle do
+    cellar :any_skip_relocation
+    sha256 "3b7c357c44ec47b77d5ad89ff929b38447cb87b1b5698e0efa1d558cb22c7b26" => :el_capitan
+    sha256 "3a91f99b6136a401cd5551d0ed2c06e100bb80e7a844478096fff9ee944934b3" => :yosemite
+    sha256 "6e160b2d36c713c3dce3342f30c7ea2e81b6ec449719e01781c4ca5b21bf3e9e" => :mavericks
+  end
+
+  depends_on "go" => :build
+  {resources}
+
+def install
+   ENV["GOOS"] = "darwin"
+   ENV["GOARCH"] = MacOS.prefer_64_bit? ? "amd64" : "386"
+   ENV["GOPATH"] = buildpath
+
+   mkdir_p buildpath/"src/github.com/cortesi/"
+   ln_sf buildpath, buildpath/"src/github.com/cortesi/devd"
+   Language::Go.stage_deps resources, buildpath/"src"
+
+   system "go", "build", "-o", "#{{bin}}/devd", "./cmd/devd"
+   doc.install "README.md"
+ end
+
+ test do
+   begin
+     io = IO.popen("#{{bin}}/devd #{{testpath}}")
+     sleep 2
+   ensure
+     Process.kill("SIGINT", io.pid)
+     Process.wait(io.pid)
+   end
+
+   assert_match "Listening on http://devd.io", io.read
+ end
+end
+"""
+
+
+def main(version):
+    url = "https://github.com/cortesi/devd/archive/%s.tar.gz"%version
+    print >> sys.stderr, "Calculating hash from %s..."%url
+    resp = requests.get(url)
+    if resp.status_code != 200:
+        print "ERROR"
+        return
+
+    hash = hashlib.sha256(resp.content).hexdigest()
+
+    print >> sys.stderr, "Generating external resources"
+    goresources = subprocess.check_output(
+        ["homebrew-go-resources", "./cmd/devd"]
+    )
+    print TEMPLATE.format(
+        resources=goresources,
+        version=version,
+        hash = hash
+    )
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print >> sys.stderr, "Please specify version"
+        sys.exit(1)
+    main(sys.argv[1])
