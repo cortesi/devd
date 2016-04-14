@@ -46,13 +46,6 @@
 			"notests": true
 		},
 		{
-			"importpath": "github.com/bmatcuk/doublestar",
-			"repository": "https://github.com/bmatcuk/doublestar",
-			"revision": "ec3b4af762f792cb93bf2518ff9ac408dbdc2b4e",
-			"branch": "master",
-			"notests": true
-		},
-		{
 			"importpath": "github.com/daaku/go.zipexe",
 			"repository": "https://github.com/daaku/go.zipexe",
 			"revision": "a5fe2436ffcb3236e175e5149162b41cd28bd27d",
@@ -134,13 +127,6 @@
 			"importpath": "github.com/mitchellh/go-homedir",
 			"repository": "https://github.com/mitchellh/go-homedir",
 			"revision": "981ab348d865cf048eb7d17e78ac7192632d8415",
-			"branch": "master",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/rjeczalik/notify",
-			"repository": "https://github.com/rjeczalik/notify",
-			"revision": "5dd6205716539662f8f14ab513552b41eab69d5d",
 			"branch": "master",
 			"notests": true
 		},
