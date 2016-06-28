@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -31,9 +32,32 @@ func rawHeaderGet(h http.Header, key string) string {
 	return ""
 }
 
+// fileSlice implements sort.Interface, which allows to sort by file name with
+// directories first.
+type fileSlice []os.FileInfo
+
+func (p fileSlice) Len() int {
+	return len(p)
+}
+
+func (p fileSlice) Less(i, j int) bool {
+	a, b := p[i], p[j]
+	if a.IsDir() && !b.IsDir() {
+		return true
+	}
+	if b.IsDir() && !a.IsDir() {
+		return false
+	}
+	return a.Name() < b.Name()
+}
+
+func (p fileSlice) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
 type dirData struct {
 	Name  string
-	Files []os.FileInfo
+	Files fileSlice
 }
 
 func dirList(ci inject.CopyInject, logger termlog.Logger, w http.ResponseWriter, name string, f http.File, templates *template.Template) {
@@ -43,7 +67,9 @@ func dirList(ci inject.CopyInject, logger termlog.Logger, w http.ResponseWriter,
 		logger.Shout("Error reading directory for listing: %s", err)
 		return
 	}
-	data := dirData{Name: name, Files: files}
+	sortedFiles := fileSlice(files)
+	sort.Sort(sortedFiles)
+	data := dirData{Name: name, Files: sortedFiles}
 	err = ci.ServeTemplate(http.StatusOK, w, templates.Lookup("dirlist.html"), data)
 	if err != nil {
 		logger.Shout("Failed to generate dir listing: %s", err)
