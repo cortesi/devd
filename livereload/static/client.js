@@ -303,8 +303,9 @@
             });
         }
     }
-    window.addEventListener("beforeunload", function(){
+    window.addEventListener("beforeunload", function(e) {
         ws.close();
-        return null;
+        delete e.returnValue;
+        return;
     });
 })();
