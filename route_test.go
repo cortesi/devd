@@ -64,6 +64,21 @@ var newSpecTests = []struct {
 		&Route{"one.devd.io", "/", tForwardEndpoint("http://three")},
 		"",
 	},
+	{
+		"one=localhost:1234",
+		nil,
+		"Unknown scheme 'localhost': did you mean http or https?: localhost:1234",
+	},
+	{
+		"one=localhost:1234/abc",
+		nil,
+		"Unknown scheme 'localhost': did you mean http or https?: localhost:1234/abc",
+	},
+	{
+		"one=ws://three",
+		nil,
+		"Websocket protocol not supported: ws://three",
+	},
 }
 
 func TestParseSpec(t *testing.T) {

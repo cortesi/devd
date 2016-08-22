@@ -227,6 +227,10 @@ func main() {
 		logger.TimeFmt = ""
 	}
 
+	for _, i := range(dd.Routes) {
+		logger.Say("Route %s -> %s", i.MuxMatch(), i.Endpoint.String())
+	}
+
 	if *tls {
 		home, err := homedir.Dir()
 		if err != nil {
