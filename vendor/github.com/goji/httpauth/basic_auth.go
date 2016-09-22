@@ -23,7 +23,7 @@ type AuthOptions struct {
 	Realm               string
 	User                string
 	Password            string
-	AuthFunc            func(string, string) bool
+	AuthFunc            func(string, string, *http.Request) bool
 	UnauthorizedHandler http.Handler
 }
 
@@ -53,9 +53,9 @@ func (b *basicAuth) authenticate(r *http.Request) bool {
 		return false
 	}
 
-	// In simple mode, prevent authentication with empty credentials if User or
-	// Password is not set.
-	if b.opts.AuthFunc == nil && (b.opts.User == "" || b.opts.Password == "") {
+	// In simple mode, prevent authentication with empty credentials if User is
+	// not set. Allow empty passwords to support non-password use-cases.
+	if b.opts.AuthFunc == nil && b.opts.User == "" {
 		return false
 	}
 
@@ -89,12 +89,12 @@ func (b *basicAuth) authenticate(r *http.Request) bool {
 		b.opts.AuthFunc = b.simpleBasicAuthFunc
 	}
 
-	return b.opts.AuthFunc(givenUser, givenPass)
+	return b.opts.AuthFunc(givenUser, givenPass, r)
 }
 
 // simpleBasicAuthFunc authenticates the supplied username and password against
 // the User and Password set in the Options struct.
-func (b *basicAuth) simpleBasicAuthFunc(user, pass string) bool {
+func (b *basicAuth) simpleBasicAuthFunc(user, pass string, r *http.Request) bool {
 	// Equalize lengths of supplied and required credentials
 	// by hashing them
 	givenUser := sha256.Sum256([]byte(user))

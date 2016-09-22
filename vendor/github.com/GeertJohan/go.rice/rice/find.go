@@ -80,11 +80,35 @@ func findBoxes(pkg *build.Package) map[string]bool {
 		var nextIdentIsBoxFunc bool
 		var nextBasicLitParamIsBoxName bool
 		var boxCall token.Pos
+		var variableToRemember string
+		var validVariablesForBoxes map[string]bool = make(map[string]bool)
+
 		ast.Inspect(f, func(node ast.Node) bool {
 			if node == nil {
 				return false
 			}
 			switch x := node.(type) {
+			// this case fixes the var := func() style assignments, not assignments to vars declared separately from the assignment.
+			case *ast.AssignStmt:
+				var assign = node.(*ast.AssignStmt)
+				name, found := assign.Lhs[0].(*ast.Ident)
+				if found {
+					variableToRemember = name.Name
+					composite, first := assign.Rhs[0].(*ast.CompositeLit)
+					if first {
+						riceSelector, second := composite.Type.(*ast.SelectorExpr)
+
+						if second {
+							callCorrect := riceSelector.Sel.Name == "Config"
+							packageName, third := riceSelector.X.(*ast.Ident)
+
+							if third && callCorrect && packageName.Name == ricePkgName {
+								validVariablesForBoxes[name.Name] = true
+								verbosef("\tfound variable, saving to scan for boxes: %q\n", name.Name)
+							}
+						}
+					}
+				}
 			case *ast.Ident:
 				if nextIdentIsBoxFunc || ricePkgName == "." {
 					nextIdentIsBoxFunc = false
@@ -93,7 +117,7 @@ func findBoxes(pkg *build.Package) map[string]bool {
 						boxCall = x.Pos()
 					}
 				} else {
-					if x.Name == ricePkgName {
+					if x.Name == ricePkgName || validVariablesForBoxes[x.Name] {
 						nextIdentIsBoxFunc = true
 					}
 				}

@@ -26,7 +26,7 @@ func init() {
 	{{range .Files}}{{.Identifier}} := &embedded.EmbeddedFile{
 		Filename:    ` + "`" + `{{.FileName}}` + "`" + `,
 		FileModTime: time.Unix({{.ModTime}}, 0),
-		Content:     string({{.Content | printf "%#v"}}), //++ TODO: optimize? (double allocation) or does compiler already optimize this?
+		Content:     string({{.Content | printf "%q"}}), 
 	}
 	{{end}}
 

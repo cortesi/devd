@@ -118,6 +118,7 @@ This allows external tools, like devd's sister project **modd**, to trigger
 livereload. If livereload is not enabled, SIGHUP causes the daemon to exit.
 
 
+
 ### Reverse proxy + static file server + flexible routing
 
 Modern apps tend to be collections of web servers, and devd caters for this
