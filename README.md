@@ -117,6 +117,8 @@ responds to a SIGHUP by issuing a livereload notice to all connected browsers.
 This allows external tools, like devd's sister project **modd**, to trigger
 livereload. If livereload is not enabled, SIGHUP causes the daemon to exit.
 
+The closing *head* tag must be found within the first 30kb of the remote file,
+otherwise livereload is disabled for the file.
 
 
 ### Reverse proxy + static file server + flexible routing
