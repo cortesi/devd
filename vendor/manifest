@@ -140,7 +140,7 @@
 		{
 			"importpath": "golang.org/x/crypto/ssh/terminal",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "d68c3ecb62c850b645dc072a8d78006286bf81ca",
+			"revision": "1777f3ba8c1fed80fcaec3317e3aaa4f627764d2",
 			"branch": "master",
 			"path": "/ssh/terminal",
 			"notests": true
@@ -148,7 +148,7 @@
 		{
 			"importpath": "golang.org/x/net/context",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "0cc50bbd6557282724d0ce5fbe79edabbe81d873",
+			"revision": "fb93926129b8ec0056f2f458b1f519654814edf0",
 			"branch": "master",
 			"path": "/context",
 			"notests": true
