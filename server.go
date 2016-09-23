@@ -273,6 +273,17 @@ func (dd *Devd) Router(logger termlog.TermLog, templates *template.Template) (ht
 		lr := livereload.NewServer("livereload", logger)
 		mux.Handle(livereload.EndpointPath, lr)
 		mux.Handle(livereload.ScriptPath, http.HandlerFunc(lr.ServeScript))
+		seen := make(map[string]bool)
+		for _, route := range dd.Routes {
+			if _, ok := seen[route.Host]; route.Host != "" && ok == false {
+				mux.Handle(route.Host+livereload.EndpointPath, lr)
+				mux.Handle(
+					route.Host+livereload.ScriptPath,
+					http.HandlerFunc(lr.ServeScript),
+				)
+				seen[route.Host] = true
+			}
+		}
 		if dd.LivereloadRoutes {
 			err := WatchRoutes(dd.Routes, lr, dd.Excludes, logger)
 			if err != nil {
