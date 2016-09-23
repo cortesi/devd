@@ -26,16 +26,16 @@ func checkURL(s string) (isURL bool, err error) {
 	}
 
 	switch {
-	case parsed.Scheme=="": // No scheme means local file system
+	case parsed.Scheme == "": // No scheme means local file system
 		isURL = false
-	case parsed.Scheme=="http", parsed.Scheme=="https":
+	case parsed.Scheme == "http", parsed.Scheme == "https":
 		isURL = true
-	case parsed.Scheme=="ws":
-		err = errors.New(fmt.Sprintf("Websocket protocol not supported: %s", s))
+	case parsed.Scheme == "ws":
+		err = fmt.Errorf("Websocket protocol not supported: %s", s)
 	default:
 		// A route of "localhost:1234/abc" without the "http" or "https" triggers this case.
 		// Unfortunately a route of "localhost/abc" just looks like a file and is not caught here.
-		err = errors.New(fmt.Sprintf("Unknown scheme '%s': did you mean http or https?: %s", parsed.Scheme, s))
+		err = fmt.Errorf("Unknown scheme '%s': did you mean http or https?: %s", parsed.Scheme, s)
 	}
 	return
 }
@@ -69,7 +69,7 @@ func newForwardEndpoint(path string) (*forwardEndpoint, error) {
 }
 
 func (ep forwardEndpoint) String() string {
-	return "forward to "+ep.Scheme +"://"+ep.Host+ep.Path
+	return "forward to " + ep.Scheme + "://" + ep.Host + ep.Path
 }
 
 // An enpoint that serves a filesystem location
@@ -89,7 +89,7 @@ func (ep filesystemEndpoint) Handler(templates *template.Template, ci inject.Cop
 }
 
 func (ep filesystemEndpoint) String() string {
-	return "reads files from "+string(ep)
+	return "reads files from " + string(ep)
 }
 
 // Route is a mapping from a (host, path) tuple to an endpoint.
