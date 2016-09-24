@@ -49,6 +49,10 @@ type ReverseProxy struct {
 }
 
 func singleJoiningSlash(a, b string) string {
+	if b == "" {
+		return a
+	}
+
 	aslash := strings.HasSuffix(a, "/")
 	bslash := strings.HasPrefix(b, "/")
 	switch {
