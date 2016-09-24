@@ -1,3 +1,12 @@
+# v0.6: 24 September 2016
+
+* Fix support for MacOS Sierra. This just involved a recompile to fix a compatibility issue between older versions of the Go toolchain and Sierra.
+* Fix an issue that caused a slash to be added to some URLs forwarded to reverse proxied hosts.
+* livereload: endpoints now run on all domains, fixing livereload on subdomain endpoints.
+* livereload: fix support  of IE11 (thanks thomas@houseofcode.io).
+* Sort directory list entries (thanks @Schnouki).
+* Improved route parsing and clarity - (thanks to @aellerton).
+
 
 # v0.5: 8 April 2016
 
