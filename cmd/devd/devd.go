@@ -98,7 +98,7 @@ func main() {
 		Default("false").
 		Bool()
 
-	tls := kingpin.Flag("tls", "Serve TLS with auto-generated self-signed certificate (~/.devd.crt)").
+	tls := kingpin.Flag("tls", "Serve TLS with auto-generated self-signed certificate (~/.devd.cert)").
 		Short('s').
 		Default("false").
 		Bool()
