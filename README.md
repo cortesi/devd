@@ -63,8 +63,8 @@ See the [modd](https://github.com/cortesi/modd) project page for details.
 ### Cross-platform and self-contained
 
 Devd is a single statically compiled binary with no external dependencies, and
-is released for OSX, Linux and Windows. Don't want to install Node or Python in
-that light-weight Docker instance you're hacking in? Just copy over the devd
+is released for macOS, Linux and Windows. Don't want to install Node or Python
+in that light-weight Docker instance you're hacking in? Just copy over the devd
 binary and be done with it.
 
 
@@ -146,12 +146,12 @@ The [route specification syntax](#routes) is compact but powerful enough to cate
 ### Light-weight virtual hosting
 
 Devd uses a dedicated domain - **devd.io** - to do simple virtual hosting. This
-domain and all its subdomains resolves to 127.0.0.1, which we use to set up
+domain and all its subdomains resolve to 127.0.0.1, which we use to set up
 virtual hosting without any changes to */etc/hosts* or other local
 configuration. Route specifications that don't start with a leading **/** are
 taken to be subdomains of **devd.io**. So, the following command serves a
-static site from devd.io, and reverse proxies a locally
-running app on api.devd.io:
+static site from devd.io, and reverse proxies a locally running app on
+api.devd.io:
 
 <pre class="terminal">
 devd ./static api=http://localhost:8888
@@ -215,6 +215,54 @@ Similarly, a simple reverse proxy can be started like this:
 ```
 devd http://localhost:8888
 ```
+
+
+### Serving default content for files not found
+
+The **--notfound** flag can be passed multiple times, and specifies a set of
+routes that are consulted when a requested file is not found by the static file
+server. The basic syntax is **root=path**, where **root** has the same
+semantics as route specification. As with routes, the **root=** component is
+optional, and if absent is taken to be equal to **/**. The **path** is always
+relative to the static directory being served. When it starts with a leading
+slash (**/**), devd will only look for a replacement file in a single location
+relative to the root of the tree. Otherwise, it will search for a matching file
+by joining the specified **path** with all path components up to the root of
+the tree.
+
+Let's illustrate this with an example. Say we have a */static* directory as
+follows:
+
+```
+./static
+├── bar
+│   └── index.html
+└── index.html
+```
+
+We can specify that devd should look for an *index.html* anywhere on the path
+to the root of the static tree as follows:
+
+```
+devd --notfound index.html  /static
+```
+
+Now, the following happens:
+
+* A request for */nonexistent.html* returns the contents of */index.html*.
+* A request for */bar/nonexistent.html* returns the contents of */bar/index.html*.
+* A request for */foo/bar/voing/index.html* returns the contents of */index.html*
+
+We could instead specify an absolute path in the route:
+
+```
+devd --notfound /index.html  /static
+```
+
+In this case the contents of */index.html* would be returned for all paths not
+found.
+
+
 
 ## Excluding files from livereload
 

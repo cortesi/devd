@@ -12,7 +12,7 @@ import (
 )
 
 func tFilesystemEndpoint(s string) *filesystemEndpoint {
-	e, _ := newFilesystemEndpoint(s)
+	e, _ := newFilesystemEndpoint(s, []string{})
 	return e
 }
 
@@ -83,7 +83,7 @@ var newSpecTests = []struct {
 
 func TestParseSpec(t *testing.T) {
 	for i, tt := range newSpecTests {
-		s, err := newRoute(tt.raw)
+		s, err := newRoute(tt.raw, []string{})
 		if tt.spec != nil {
 			if err != nil {
 				t.Errorf("Test %d, error:\n%s\n", i, err)
@@ -125,7 +125,7 @@ func TestForwardEndpoint(t *testing.T) {
 		panic(err)
 	}
 
-	f.Handler(templates, inject.CopyInject{})
+	f.Handler("", templates, inject.CopyInject{})
 
 	f, err = newForwardEndpoint("%")
 	if err == nil {
@@ -134,7 +134,7 @@ func TestForwardEndpoint(t *testing.T) {
 }
 
 func TestNewRoute(t *testing.T) {
-	r, err := newRoute("foo=http://%")
+	r, err := newRoute("foo=http://%", []string{})
 	if err == nil {
 		t.Errorf("Expected error, got %s", r)
 	}
@@ -147,7 +147,7 @@ func TestRouteHandler(t *testing.T) {
 		{"/one=two"},
 	}
 	for i, tt := range routeHandlerTests {
-		r, err := newRoute(tt.spec)
+		r, err := newRoute(tt.spec, []string{})
 		if err != nil {
 			t.Errorf(
 				"Test %d, unexpected error:\n%s\n",
@@ -165,29 +165,34 @@ func TestRouteHandler(t *testing.T) {
 			panic(err)
 		}
 
-		r.Endpoint.Handler(templates, inject.CopyInject{})
+		r.Endpoint.Handler("", templates, inject.CopyInject{})
 	}
 }
 
 func TestRouteCollection(t *testing.T) {
 	var m = make(RouteCollection)
 	_ = m.String()
-	err := m.Add("foo=bar")
+	err := m.Add("foo=bar", []string{})
 	if err != nil {
 		t.Error(err)
 	}
-	err = m.Add("foo")
+	err = m.Add("foo", []string{})
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = m.Add("xxx=bar")
+	err = m.Add("xxx=bar", []string{})
 	if err != nil {
 		t.Errorf("Set error: %s", err)
 	}
 
-	err = m.Add("xxx=bar")
+	err = m.Add("xxx=bar", []string{})
 	if err == nil {
 		t.Errorf("Expected error, got: %s", m)
 	}
+}
+
+func TestNotFound(t *testing.T) {
+	e, _ := newFilesystemEndpoint("/test", []string{})
+	fmt.Println(e)
 }

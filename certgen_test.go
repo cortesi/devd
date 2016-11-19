@@ -13,7 +13,7 @@ func TestGenerateCert(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	defer os.Remove(d)
+	defer func() { _ = os.Remove(d) }()
 	dst := path.Join(d, "certbundle")
 	err = GenerateCert(dst)
 	if err != nil {

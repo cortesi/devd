@@ -7,56 +7,31 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/cortesi/devd/fileserver"
 	"github.com/cortesi/devd/httpctx"
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/reverseproxy"
+	"github.com/cortesi/devd/routespec"
 )
-
-const defaultDomain = "devd.io"
-
-func checkURL(s string) (isURL bool, err error) {
-	var parsed *url.URL
-
-	parsed, err = url.Parse(s)
-	if err != nil {
-		return
-	}
-
-	switch {
-	case parsed.Scheme == "": // No scheme means local file system
-		isURL = false
-	case parsed.Scheme == "http", parsed.Scheme == "https":
-		isURL = true
-	case parsed.Scheme == "ws":
-		err = fmt.Errorf("Websocket protocol not supported: %s", s)
-	default:
-		// A route of "localhost:1234/abc" without the "http" or "https" triggers this case.
-		// Unfortunately a route of "localhost/abc" just looks like a file and is not caught here.
-		err = fmt.Errorf("Unknown scheme '%s': did you mean http or https?: %s", parsed.Scheme, s)
-	}
-	return
-}
 
 // Endpoint is the destination of a Route - either on the filesystem or
 // forwarding to another URL
 type endpoint interface {
-	Handler(templates *template.Template, ci inject.CopyInject) httpctx.Handler
+	Handler(prefix string, templates *template.Template, ci inject.CopyInject) httpctx.Handler
 	String() string
 }
 
 // An endpoint that forwards to an upstream URL
 type forwardEndpoint url.URL
 
-func (ep forwardEndpoint) Handler(templates *template.Template, ci inject.CopyInject) httpctx.Handler {
+func (ep forwardEndpoint) Handler(prefix string, templates *template.Template, ci inject.CopyInject) httpctx.Handler {
 	u := url.URL(ep)
 	rp := reverseproxy.NewSingleHostReverseProxy(&u, ci)
 	rp.Transport = &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
-	return rp
+	return httpctx.StripPrefix(prefix, rp)
 }
 
 func newForwardEndpoint(path string) (*forwardEndpoint, error) {
@@ -73,23 +48,38 @@ func (ep forwardEndpoint) String() string {
 }
 
 // An enpoint that serves a filesystem location
-type filesystemEndpoint string
-
-func newFilesystemEndpoint(path string) (*filesystemEndpoint, error) {
-	f := filesystemEndpoint(path)
-	return &f, nil
+type filesystemEndpoint struct {
+	Root           string
+	notFoundRoutes []routespec.RouteSpec
 }
 
-func (ep filesystemEndpoint) Handler(templates *template.Template, ci inject.CopyInject) httpctx.Handler {
+func newFilesystemEndpoint(path string, notfound []string) (*filesystemEndpoint, error) {
+	rparts := []routespec.RouteSpec{}
+	for _, p := range notfound {
+		rp, err := routespec.ParseRouteSpec(p)
+		if err != nil {
+			return nil, err
+		}
+		if rp.IsURL {
+			return nil, fmt.Errorf("Not found over-ride target cannot be a URL.")
+		}
+		rparts = append(rparts, *rp)
+	}
+	return &filesystemEndpoint{path, rparts}, nil
+}
+
+func (ep filesystemEndpoint) Handler(prefix string, templates *template.Template, ci inject.CopyInject) httpctx.Handler {
 	return &fileserver.FileServer{
-		Root:      http.Dir(ep),
-		Inject:    ci,
-		Templates: templates,
+		Root:           http.Dir(ep.Root),
+		Inject:         ci,
+		Templates:      templates,
+		NotFoundRoutes: ep.notFoundRoutes,
+		Prefix:         prefix,
 	}
 }
 
 func (ep filesystemEndpoint) String() string {
-	return "reads files from " + string(ep)
+	return "reads files from " + ep.Root
 }
 
 // Route is a mapping from a (host, path) tuple to an endpoint.
@@ -101,49 +91,23 @@ type Route struct {
 
 // Constructs a new route from a string specifcation. Specifcations are of the
 // form ANCHOR=VALUE.
-func newRoute(s string) (*Route, error) {
-	seq := strings.SplitN(s, "=", 2)
-	var path, value string
-	if len(seq) == 1 {
-		path = "/"
-		value = seq[0]
-	} else {
-		path = seq[0]
-		value = seq[1]
+func newRoute(s string, notfound []string) (*Route, error) {
+	rp, err := routespec.ParseRouteSpec(s)
+	if err != nil {
+		return nil, err
 	}
-	if path == "" || value == "" {
-		return nil, errors.New("Invalid specification")
-	}
-	host := ""
-	if path[0] != '/' {
-		seq := strings.SplitN(path, "/", 2)
-		host = seq[0] + "." + defaultDomain
-		switch len(seq) {
-		case 1:
-			path = "/"
-		case 2:
-			path = "/" + seq[1]
-		}
-	}
+
 	var ep endpoint
-	var err error
-	var isURL bool
 
-	isURL, err = checkURL(value)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if isURL {
-		ep, err = newForwardEndpoint(value)
+	if rp.IsURL {
+		ep, err = newForwardEndpoint(rp.Value)
 	} else {
-		ep, err = newFilesystemEndpoint(value)
+		ep, err = newFilesystemEndpoint(rp.Value, notfound)
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &Route{host, path, ep}, nil
+	return &Route{rp.Host, rp.Path, ep}, nil
 }
 
 // MuxMatch produces a match clause suitable for passing to a Mux
@@ -160,8 +124,8 @@ func (f *RouteCollection) String() string {
 }
 
 // Add a route to the collection
-func (f RouteCollection) Add(value string) error {
-	s, err := newRoute(value)
+func (f RouteCollection) Add(value string, notfound []string) error {
+	s, err := newRoute(value, notfound)
 	if err != nil {
 		return err
 	}

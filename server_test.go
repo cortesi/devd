@@ -45,7 +45,7 @@ func TestPickPort(t *testing.T) {
 }
 
 func fsEndpoint(s string) *filesystemEndpoint {
-	e, _ := newFilesystemEndpoint(s)
+	e, _ := newFilesystemEndpoint(s, []string{})
 	return e
 }
 
@@ -57,7 +57,7 @@ func TestDevdRouteHandler(t *testing.T) {
 	ci := inject.CopyInject{}
 
 	devd := Devd{LivereloadRoutes: true}
-	h := devd.WrapHandler(logger, r.Endpoint.Handler(templates, ci))
+	h := devd.WrapHandler(logger, r.Endpoint.Handler("", templates, ci))
 	ht := handlerTester{t, h}
 
 	AssertCode(t, ht.Request("GET", "/", nil), 200)
@@ -69,7 +69,10 @@ func TestDevdHandler(t *testing.T) {
 	templates := ricetemp.MustMakeTemplates(rice.MustFindBox("templates"))
 
 	devd := Devd{LivereloadRoutes: true, WatchPaths: []string{"./"}}
-	devd.AddRoutes([]string{"./"})
+	err := devd.AddRoutes([]string{"./"}, []string{})
+	if err != nil {
+		t.Error(err)
+	}
 	h, err := devd.Router(logger, templates)
 	if err != nil {
 		t.Error(err)

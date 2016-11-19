@@ -5,6 +5,7 @@ package fileserver
 
 import (
 	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"mime"
@@ -20,6 +21,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/cortesi/devd/inject"
+	"github.com/cortesi/devd/routespec"
 	"github.com/cortesi/termlog"
 )
 
@@ -58,6 +60,16 @@ func (p fileSlice) Swap(i, j int) {
 type dirData struct {
 	Name  string
 	Files fileSlice
+}
+
+func stripPrefix(prefix string, path string) string {
+	if prefix == "" {
+		return path
+	}
+	if p := strings.TrimPrefix(path, prefix); len(p) < len(path) {
+		return p
+	}
+	return path
 }
 
 func dirList(ci inject.CopyInject, logger termlog.Logger, w http.ResponseWriter, name string, f http.File, templates *template.Template) {
@@ -224,9 +236,11 @@ func localRedirect(w http.ResponseWriter, r *http.Request, newPath string) {
 //
 //     http.Handle("/", &fileserver.FileServer{Root: http.Dir("/tmp")})
 type FileServer struct {
-	Root      http.FileSystem
-	Inject    inject.CopyInject
-	Templates *template.Template
+	Root           http.FileSystem
+	Inject         inject.CopyInject
+	Templates      *template.Template
+	NotFoundRoutes []routespec.RouteSpec
+	Prefix         string
 }
 
 func (fserver *FileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -240,20 +254,123 @@ func (fserver *FileServer) ServeHTTPContext(
 	logger := termlog.FromContext(ctx)
 	logger.SayAs("debug", "debug fileserver: serving with FileServer...")
 
-	upath := r.URL.Path
+	upath := stripPrefix(fserver.Prefix, r.URL.Path)
 	if !strings.HasPrefix(upath, "/") {
 		upath = "/" + upath
-		r.URL.Path = upath
 	}
 	fserver.serveFile(logger, w, r, path.Clean(upath), true)
 }
 
-func notFound(ci inject.CopyInject, templates *template.Template, w http.ResponseWriter) error {
+func serveNotFound(ci inject.CopyInject, templates *template.Template, w http.ResponseWriter) error {
 	err := ci.ServeTemplate(http.StatusNotFound, w, templates.Lookup("404.html"), nil)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// Given a path and a "not found" over-ride specification, return an array of
+// over-ride paths that should be considered for serving, in priority order. We
+// assume that path is a sub-path above a certain root, and we never return
+// paths that would fall outside this.
+//
+// We also sanity check file extensions to make sure that the expected file
+// type matches what we serve. This prevents an over-ride for *.html files from
+// serving up data when, say, a missing .png is requested.
+func notFoundSearchPaths(pth string, spec string) []string {
+	var ret []string
+	if strings.HasPrefix(spec, "/") {
+		ret = []string{path.Clean(spec)}
+	} else {
+		for {
+			pth = path.Dir(pth)
+			if pth == "/" {
+				ret = append(ret, path.Join(pth, spec))
+				break
+			}
+			ret = append(ret, path.Join(pth, spec))
+		}
+	}
+	return ret
+}
+
+func (fserver *FileServer) notFound(
+	logger termlog.Logger,
+	w http.ResponseWriter,
+	r *http.Request,
+	name string,
+) (err error) {
+	sm := http.NewServeMux()
+	seen := make(map[string]bool)
+	for _, nfr := range fserver.NotFoundRoutes {
+		seen[nfr.MuxMatch()] = true
+		sm.HandleFunc(
+			nfr.MuxMatch(),
+			func(nfr routespec.RouteSpec) func(w http.ResponseWriter, r *http.Request) {
+				return func(w http.ResponseWriter, r *http.Request) {
+					for _, pth := range notFoundSearchPaths(name, nfr.Value) {
+						next, err := fserver.serveNotFoundFile(w, r, pth)
+						if err != nil {
+							logger.Shout("Unable to serve not-found override: %s", err)
+						}
+						if !next {
+							return
+						}
+					}
+					err = serveNotFound(fserver.Inject, fserver.Templates, w)
+					if err != nil {
+						logger.Shout("Internal error: %s", err)
+					}
+				}
+			}(nfr),
+		)
+	}
+	if _, exists := seen["/"]; !exists {
+		sm.HandleFunc(
+			"/",
+			func(response http.ResponseWriter, request *http.Request) {
+				err = serveNotFound(fserver.Inject, fserver.Templates, w)
+				if err != nil {
+					logger.Shout("Internal error: %s", err)
+				}
+			},
+		)
+	}
+	handle, _ := sm.Handler(r)
+	handle.ServeHTTP(w, r)
+	return err
+}
+
+// If the next return value is true, the caller should proceed to the next
+// over-ride path if there is one. If the err return value is non-nil, serving
+// should stop.
+func (fserver *FileServer) serveNotFoundFile(
+	w http.ResponseWriter,
+	r *http.Request,
+	name string,
+) (next bool, err error) {
+	f, err := fserver.Root.Open(name)
+	if err != nil {
+		return true, nil
+	}
+	defer f.Close()
+
+	d, err := f.Stat()
+	if err != nil {
+		return true, nil
+	}
+
+	if d.IsDir() {
+		return true, nil
+	}
+
+	// serverContent will check modification time
+	sizeFunc := func() (int64, error) { return d.Size(), nil }
+	err = serveContent(fserver.Inject, w, r, d.Name(), d.ModTime(), sizeFunc, f)
+	if err != nil {
+		return false, fmt.Errorf("Error serving file: %s", err)
+	}
+	return false, nil
 }
 
 // name is '/'-separated, not filepath.Separator.
@@ -280,7 +397,7 @@ func (fserver *FileServer) serveFile(
 	f, err := fserver.Root.Open(name)
 	if err != nil {
 		logger.WarnAs("debug", "debug fileserver: %s", err)
-		if err := notFound(fserver.Inject, fserver.Templates, w); err != nil {
+		if err := fserver.notFound(logger, w, r, name); err != nil {
 			logger.Shout("Internal error: %s", err)
 		}
 		return
@@ -290,7 +407,7 @@ func (fserver *FileServer) serveFile(
 	d, err1 := f.Stat()
 	if err1 != nil {
 		logger.WarnAs("debug", "debug fileserver: %s", err)
-		if err := notFound(fserver.Inject, fserver.Templates, w); err != nil {
+		if err := fserver.notFound(logger, w, r, name); err != nil {
 			logger.Shout("Internal error: %s", err)
 		}
 		return
@@ -298,18 +415,18 @@ func (fserver *FileServer) serveFile(
 
 	if redirect {
 		// redirect to canonical path: / at end of directory url
-		// r.URL.Path always begins with /
 		url := r.URL.Path
+		if !strings.HasPrefix(url, "/") {
+			url = "/" + url
+		}
 		if d.IsDir() {
 			if url[len(url)-1] != '/' {
 				localRedirect(w, r, path.Base(url)+"/")
 				return
 			}
-		} else {
-			if url[len(url)-1] == '/' {
-				localRedirect(w, r, "../"+path.Base(url))
-				return
-			}
+		} else if url[len(url)-1] == '/' {
+			localRedirect(w, r, "../"+path.Base(url))
+			return
 		}
 	}
 

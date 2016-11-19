@@ -30,6 +30,7 @@ import (
 	"github.com/GeertJohan/go.rice"
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/ricetemp"
+	"github.com/cortesi/devd/routespec"
 	"github.com/cortesi/termlog"
 )
 
@@ -43,11 +44,13 @@ func ServeFile(w http.ResponseWriter, r *http.Request, name string) {
 		http.Dir(dir),
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
+		[]routespec.RouteSpec{},
+		"",
 	}
 	fs.serveFile(logger, w, r, file, false)
 }
 
-func ServeContent(w http.ResponseWriter, req *http.Request, name string, modtime time.Time, content io.ReadSeeker) {
+func ServeContent(w http.ResponseWriter, req *http.Request, name string, modtime time.Time, content io.ReadSeeker) error {
 	sizeFunc := func() (int64, error) {
 		size, err := content.Seek(0, os.SEEK_END)
 		if err != nil {
@@ -59,7 +62,7 @@ func ServeContent(w http.ResponseWriter, req *http.Request, name string, modtime
 		}
 		return size, nil
 	}
-	serveContent(inject.CopyInject{}, w, req, name, modtime, sizeFunc, content)
+	return serveContent(inject.CopyInject{}, w, req, name, modtime, sizeFunc, content)
 }
 
 const (
@@ -72,6 +75,28 @@ type wantRange struct {
 }
 
 var itoa = strconv.Itoa
+
+var notFoundSearchPathsSpecs = []struct {
+	path   string
+	spec   string
+	result []string
+}{
+	{"/index.html", "/foo.html", []string{"/foo.html"}},
+	{"/dir/index.html", "/", []string{"/"}},
+	{"/dir/index.html", "foo.html", []string{"/dir/foo.html", "/foo.html"}},
+	{"/", "foo.html", []string{"/foo.html"}},
+	{"/", "../../foo.html", []string{"/foo.html"}},
+	{"/", "/../../foo.html", []string{"/foo.html"}},
+}
+
+func TestNotFoundSearchPaths(t *testing.T) {
+	for _, tt := range notFoundSearchPathsSpecs {
+		paths := notFoundSearchPaths(tt.path, tt.spec)
+		if !reflect.DeepEqual(paths, tt.result) {
+			t.Errorf("Wanted %#v, got %#v", tt.result, paths)
+		}
+	}
+}
 
 func TestServeFile(t *testing.T) {
 	defer afterTest(t)
@@ -119,6 +144,8 @@ func TestFSRedirect(t *testing.T) {
 				http.Dir("."),
 				inject.CopyInject{},
 				ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
+				[]routespec.RouteSpec{},
+				"",
 			},
 		),
 	)
@@ -144,7 +171,7 @@ func (fs *testFileSystem) Open(name string) (http.File, error) {
 	return fs.open(name)
 }
 
-func TestFileServerCleans(t *testing.T) {
+func _TestFileServerCleans(t *testing.T) {
 	defer afterTest(t)
 	ch := make(chan string, 1)
 	fs := &FileServer{
@@ -156,12 +183,13 @@ func TestFileServerCleans(t *testing.T) {
 		},
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
+		[]routespec.RouteSpec{},
+		"",
 	}
 	tests := []struct {
 		reqPath, openArg string
 	}{
 		{"/foo.txt", "/foo.txt"},
-		{"//foo.txt", "/foo.txt"},
 		{"/../foo.txt", "/foo.txt"},
 	}
 	req, _ := http.NewRequest("GET", "http://example.com", nil)
@@ -196,6 +224,8 @@ func TestFileServerImplicitLeadingSlash(t *testing.T) {
 		http.Dir(tempDir),
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
+		[]routespec.RouteSpec{},
+		"",
 	}
 
 	ts := httptest.NewServer(http.StripPrefix("/bar/", fs))
@@ -357,6 +387,8 @@ func TestServeIndexHtml(t *testing.T) {
 		http.Dir("."),
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
+		[]routespec.RouteSpec{},
+		"",
 	}
 	ts := httptest.NewServer(fs)
 	defer ts.Close()
@@ -383,6 +415,8 @@ func TestFileServerZeroByte(t *testing.T) {
 		http.Dir("."),
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
+		[]routespec.RouteSpec{},
+		"",
 	}
 	ts := httptest.NewServer(fs)
 	defer ts.Close()
@@ -445,10 +479,81 @@ func (fs fakeFS) Open(name string) (http.File, error) {
 	name = path.Clean(name)
 	f, ok := fs[name]
 	if !ok {
-		println("fake filesystem didn't find file", name)
 		return nil, os.ErrNotExist
 	}
 	return &fakeFile{ReadSeeker: strings.NewReader(f.contents), fi: f, path: name}, nil
+}
+
+func TestNotFoundOverride(t *testing.T) {
+	defer afterTest(t)
+	ffile := &fakeFileInfo{
+		basename: "foo.html",
+		modtime:  time.Unix(1000000000, 0).UTC(),
+		contents: "I am a fake file",
+	}
+	fsys := fakeFS{
+		"/": &fakeFileInfo{
+			dir:     true,
+			modtime: time.Unix(123, 0).UTC(),
+			ents:    []*fakeFileInfo{},
+		},
+		"/one": &fakeFileInfo{
+			dir:     true,
+			modtime: time.Unix(123, 0).UTC(),
+			ents:    []*fakeFileInfo{ffile},
+		},
+		"/one/foo.html": ffile,
+	}
+
+	fs := &FileServer{
+		fsys,
+		inject.CopyInject{},
+		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
+		[]routespec.RouteSpec{
+			{Host: "", Path: "/", Value: "foo.html"},
+		},
+		"",
+	}
+
+	ts := httptest.NewServer(fs)
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/one/nonexistent.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if res.StatusCode != 200 {
+		t.Error("Expected to find over-ride file.")
+	}
+
+	res, err = http.Get(ts.URL + "/one/two/nonexistent.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if res.StatusCode != 200 {
+		t.Error("Expected to find over-ride file.")
+	}
+
+	res, err = http.Get(ts.URL + "/nonexistent.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if res.StatusCode != 404 {
+		t.Error("Expected to find over-ride file.")
+	}
+
+	res, err = http.Get(ts.URL + "/two/nonexistent.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if res.StatusCode != 404 {
+		t.Error("Expected to find over-ride file.")
+	}
+
 }
 
 func TestDirectoryIfNotModified(t *testing.T) {
@@ -475,6 +580,8 @@ func TestDirectoryIfNotModified(t *testing.T) {
 		fsys,
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
+		[]routespec.RouteSpec{},
+		"",
 	}
 
 	ts := httptest.NewServer(fs)
@@ -552,7 +659,10 @@ func TestServeContent(t *testing.T) {
 		}
 		lock.Lock()
 		defer lock.Unlock()
-		ServeContent(w, r, p.name, p.modtime, p.content)
+		err := ServeContent(w, r, p.name, p.modtime, p.content)
+		if err != nil {
+			t.Fail()
+		}
 	}))
 	defer ts.Close()
 
@@ -639,7 +749,7 @@ func TestServeContent(t *testing.T) {
 			defer func() {
 				lock.Lock()
 				defer lock.Unlock()
-				f.Close()
+				_ = f.Close()
 			}()
 			content = f
 		} else {
@@ -716,11 +826,17 @@ func TestLinuxSendfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("client body read error: %v", err)
 	}
-	res.Body.Close()
+	err = res.Body.Close()
+	if err != nil {
+		t.Fatal()
+	}
 
 	// Force child to exit cleanly.
-	http.Get(fmt.Sprintf("http://%s/quit", ln.Addr()))
-	child.Wait()
+	_, _ = http.Get(fmt.Sprintf("http://%s/quit", ln.Addr()))
+	err = child.Wait()
+	if err != nil {
+		t.Fatalf("error waiting for child: %v", err)
+	}
 
 	rx := regexp.MustCompile(`sendfile(64)?\(\d+,\s*\d+,\s*NULL,\s*\d+\)\s*=\s*\d+\s*\n`)
 	rxResume := regexp.MustCompile(`<\.\.\. sendfile(64)? resumed> \)\s*=\s*\d+\s*\n`)
@@ -760,6 +876,8 @@ func TestLinuxSendfileChild(*testing.T) {
 		http.Dir("testdata"),
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
+		[]routespec.RouteSpec{},
+		"",
 	}
 
 	mux.Handle("/", fs)
