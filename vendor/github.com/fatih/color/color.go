@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
@@ -312,91 +313,111 @@ func boolPtr(v bool) *bool {
 	return &v
 }
 
-// Black is an convenient helper function to print with black foreground. A
-// newline is appended to format by default.
-func Black(format string, a ...interface{}) { printColor(format, FgBlack, a...) }
+// colorsCache is used to reduce the count of created Color objects and
+// allows to reuse already created objects with required Attribute.
+var colorsCache = make(map[Attribute]*Color)
 
-// Red is an convenient helper function to print with red foreground. A
-// newline is appended to format by default.
-func Red(format string, a ...interface{}) { printColor(format, FgRed, a...) }
+var colorsCacheMu = new(sync.Mutex) // protects colorsCache
 
-// Green is an convenient helper function to print with green foreground. A
-// newline is appended to format by default.
-func Green(format string, a ...interface{}) { printColor(format, FgGreen, a...) }
+func getCachedColor(p Attribute) *Color {
+	colorsCacheMu.Lock()
+	defer colorsCacheMu.Unlock()
 
-// Yellow is an convenient helper function to print with yellow foreground.
-// A newline is appended to format by default.
-func Yellow(format string, a ...interface{}) { printColor(format, FgYellow, a...) }
+	c, ok := colorsCache[p]
+	if !ok {
+		c = New(p)
+		colorsCache[p] = c
+	}
 
-// Blue is an convenient helper function to print with blue foreground. A
-// newline is appended to format by default.
-func Blue(format string, a ...interface{}) { printColor(format, FgBlue, a...) }
+	return c
+}
 
-// Magenta is an convenient helper function to print with magenta foreground.
-// A newline is appended to format by default.
-func Magenta(format string, a ...interface{}) { printColor(format, FgMagenta, a...) }
+func colorPrint(format string, p Attribute, a ...interface{}) {
+	c := getCachedColor(p)
 
-// Cyan is an convenient helper function to print with cyan foreground. A
-// newline is appended to format by default.
-func Cyan(format string, a ...interface{}) { printColor(format, FgCyan, a...) }
-
-// White is an convenient helper function to print with white foreground. A
-// newline is appended to format by default.
-func White(format string, a ...interface{}) { printColor(format, FgWhite, a...) }
-
-func printColor(format string, p Attribute, a ...interface{}) {
 	if !strings.HasSuffix(format, "\n") {
 		format += "\n"
 	}
 
-	c := &Color{params: []Attribute{p}}
-	c.Printf(format, a...)
+	if len(a) == 0 {
+		c.Print(format)
+	} else {
+		c.Printf(format, a...)
+	}
 }
+
+func colorString(format string, p Attribute, a ...interface{}) string {
+	c := getCachedColor(p)
+
+	if len(a) == 0 {
+		return c.SprintFunc()(format)
+	}
+
+	return c.SprintfFunc()(format, a...)
+}
+
+// Black is an convenient helper function to print with black foreground. A
+// newline is appended to format by default.
+func Black(format string, a ...interface{}) { colorPrint(format, FgBlack, a...) }
+
+// Red is an convenient helper function to print with red foreground. A
+// newline is appended to format by default.
+func Red(format string, a ...interface{}) { colorPrint(format, FgRed, a...) }
+
+// Green is an convenient helper function to print with green foreground. A
+// newline is appended to format by default.
+func Green(format string, a ...interface{}) { colorPrint(format, FgGreen, a...) }
+
+// Yellow is an convenient helper function to print with yellow foreground.
+// A newline is appended to format by default.
+func Yellow(format string, a ...interface{}) { colorPrint(format, FgYellow, a...) }
+
+// Blue is an convenient helper function to print with blue foreground. A
+// newline is appended to format by default.
+func Blue(format string, a ...interface{}) { colorPrint(format, FgBlue, a...) }
+
+// Magenta is an convenient helper function to print with magenta foreground.
+// A newline is appended to format by default.
+func Magenta(format string, a ...interface{}) { colorPrint(format, FgMagenta, a...) }
+
+// Cyan is an convenient helper function to print with cyan foreground. A
+// newline is appended to format by default.
+func Cyan(format string, a ...interface{}) { colorPrint(format, FgCyan, a...) }
+
+// White is an convenient helper function to print with white foreground. A
+// newline is appended to format by default.
+func White(format string, a ...interface{}) { colorPrint(format, FgWhite, a...) }
 
 // BlackString is an convenient helper function to return a string with black
 // foreground.
-func BlackString(format string, a ...interface{}) string {
-	return New(FgBlack).SprintfFunc()(format, a...)
-}
+func BlackString(format string, a ...interface{}) string { return colorString(format, FgBlack, a...) }
 
 // RedString is an convenient helper function to return a string with red
 // foreground.
-func RedString(format string, a ...interface{}) string {
-	return New(FgRed).SprintfFunc()(format, a...)
-}
+func RedString(format string, a ...interface{}) string { return colorString(format, FgRed, a...) }
 
 // GreenString is an convenient helper function to return a string with green
 // foreground.
-func GreenString(format string, a ...interface{}) string {
-	return New(FgGreen).SprintfFunc()(format, a...)
-}
+func GreenString(format string, a ...interface{}) string { return colorString(format, FgGreen, a...) }
 
 // YellowString is an convenient helper function to return a string with yellow
 // foreground.
-func YellowString(format string, a ...interface{}) string {
-	return New(FgYellow).SprintfFunc()(format, a...)
-}
+func YellowString(format string, a ...interface{}) string { return colorString(format, FgYellow, a...) }
 
 // BlueString is an convenient helper function to return a string with blue
 // foreground.
-func BlueString(format string, a ...interface{}) string {
-	return New(FgBlue).SprintfFunc()(format, a...)
-}
+func BlueString(format string, a ...interface{}) string { return colorString(format, FgBlue, a...) }
 
 // MagentaString is an convenient helper function to return a string with magenta
 // foreground.
 func MagentaString(format string, a ...interface{}) string {
-	return New(FgMagenta).SprintfFunc()(format, a...)
+	return colorString(format, FgMagenta, a...)
 }
 
 // CyanString is an convenient helper function to return a string with cyan
 // foreground.
-func CyanString(format string, a ...interface{}) string {
-	return New(FgCyan).SprintfFunc()(format, a...)
-}
+func CyanString(format string, a ...interface{}) string { return colorString(format, FgCyan, a...) }
 
 // WhiteString is an convenient helper function to return a string with white
 // foreground.
-func WhiteString(format string, a ...interface{}) string {
-	return New(FgWhite).SprintfFunc()(format, a...)
-}
+func WhiteString(format string, a ...interface{}) string { return colorString(format, FgWhite, a...) }

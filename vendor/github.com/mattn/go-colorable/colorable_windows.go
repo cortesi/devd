@@ -2,7 +2,6 @@ package colorable
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"math"
 	"os"
@@ -73,8 +72,10 @@ type Writer struct {
 	handle  syscall.Handle
 	lastbuf bytes.Buffer
 	oldattr word
+	oldpos  coord
 }
 
+// NewColorable return new instance of Writer which handle escape sequence from File.
 func NewColorable(file *os.File) io.Writer {
 	if file == nil {
 		panic("nil passed instead of *os.File to NewColorable()")
@@ -84,16 +85,18 @@ func NewColorable(file *os.File) io.Writer {
 		var csbi consoleScreenBufferInfo
 		handle := syscall.Handle(file.Fd())
 		procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi)))
-		return &Writer{out: file, handle: handle, oldattr: csbi.attributes}
+		return &Writer{out: file, handle: handle, oldattr: csbi.attributes, oldpos: coord{0, 0}}
 	} else {
 		return file
 	}
 }
 
+// NewColorableStdout return new instance of Writer which handle escape sequence for stdout.
 func NewColorableStdout() io.Writer {
 	return NewColorable(os.Stdout)
 }
 
+// NewColorableStderr return new instance of Writer which handle escape sequence for stderr.
 func NewColorableStderr() io.Writer {
 	return NewColorable(os.Stderr)
 }
@@ -357,11 +360,13 @@ var color256 = map[int]int{
 	255: 0xeeeeee,
 }
 
+// Write write data on console
 func (w *Writer) Write(data []byte) (n int, err error) {
 	var csbi consoleScreenBufferInfo
 	procGetConsoleScreenBufferInfo.Call(uintptr(w.handle), uintptr(unsafe.Pointer(&csbi)))
 
-	er := bytes.NewBuffer(data)
+	er := bytes.NewReader(data)
+	var bw [1]byte
 loop:
 	for {
 		r1, _, err := procGetConsoleScreenBufferInfo.Call(uintptr(w.handle), uintptr(unsafe.Pointer(&csbi)))
@@ -369,32 +374,33 @@ loop:
 			break loop
 		}
 
-		c1, _, err := er.ReadRune()
+		c1, err := er.ReadByte()
 		if err != nil {
 			break loop
 		}
 		if c1 != 0x1b {
-			fmt.Fprint(w.out, string(c1))
+			bw[0] = c1
+			w.out.Write(bw[:])
 			continue
 		}
-		c2, _, err := er.ReadRune()
+		c2, err := er.ReadByte()
 		if err != nil {
-			w.lastbuf.WriteRune(c1)
+			w.lastbuf.WriteByte(c1)
 			break loop
 		}
 		if c2 != 0x5b {
-			w.lastbuf.WriteRune(c1)
-			w.lastbuf.WriteRune(c2)
+			w.lastbuf.WriteByte(c1)
+			w.lastbuf.WriteByte(c2)
 			continue
 		}
 
 		var buf bytes.Buffer
-		var m rune
+		var m byte
 		for {
-			c, _, err := er.ReadRune()
+			c, err := er.ReadByte()
 			if err != nil {
-				w.lastbuf.WriteRune(c1)
-				w.lastbuf.WriteRune(c2)
+				w.lastbuf.WriteByte(c1)
+				w.lastbuf.WriteByte(c2)
 				w.lastbuf.Write(buf.Bytes())
 				break loop
 			}
@@ -466,7 +472,7 @@ loop:
 				continue
 			}
 			procGetConsoleScreenBufferInfo.Call(uintptr(w.handle), uintptr(unsafe.Pointer(&csbi)))
-			csbi.cursorPosition.x = short(n-1)
+			csbi.cursorPosition.x = short(n - 1)
 			procSetConsoleCursorPosition.Call(uintptr(w.handle), *(*uintptr)(unsafe.Pointer(&csbi.cursorPosition)))
 		case 'H':
 			token := strings.Split(buf.String(), ";")
@@ -481,8 +487,8 @@ loop:
 			if err != nil {
 				continue
 			}
-			csbi.cursorPosition.x = short(n2-1)
-			csbi.cursorPosition.y = short(n1-1)
+			csbi.cursorPosition.x = short(n2 - 1)
+			csbi.cursorPosition.y = short(n1 - 1)
 			procSetConsoleCursorPosition.Call(uintptr(w.handle), *(*uintptr)(unsafe.Pointer(&csbi.cursorPosition)))
 		case 'J':
 			n, err := strconv.Atoi(buf.String())
@@ -643,6 +649,11 @@ loop:
 				ci.visible = 0
 				procSetConsoleCursorInfo.Call(uintptr(w.handle), uintptr(unsafe.Pointer(&ci)))
 			}
+		case 's':
+			procGetConsoleScreenBufferInfo.Call(uintptr(w.handle), uintptr(unsafe.Pointer(&csbi)))
+			w.oldpos = csbi.cursorPosition
+		case 'u':
+			procSetConsoleCursorPosition.Call(uintptr(w.handle), *(*uintptr)(unsafe.Pointer(&w.oldpos)))
 		}
 	}
 	return len(data) - w.lastbuf.Len(), nil

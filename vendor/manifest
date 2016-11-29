@@ -63,7 +63,7 @@
 			"importpath": "github.com/davecgh/go-spew/spew",
 			"repository": "https://github.com/davecgh/go-spew",
 			"vcs": "git",
-			"revision": "6d212800a42e8ab5c146b8ace3490ee17e5225f9",
+			"revision": "346938d642f2ec3594ed81d874461961cd0faa76",
 			"branch": "master",
 			"path": "/spew",
 			"notests": true
@@ -72,7 +72,7 @@
 			"importpath": "github.com/dustin/go-humanize",
 			"repository": "https://github.com/dustin/go-humanize",
 			"vcs": "git",
-			"revision": "2fcb5204cdc65b4bec9fd0a87606bb0d0e3c54e8",
+			"revision": "bd88f87ad3a420f7bcf05e90566fd1ceb351fa7f",
 			"branch": "master",
 			"notests": true
 		},
@@ -80,7 +80,7 @@
 			"importpath": "github.com/fatih/color",
 			"repository": "https://github.com/fatih/color",
 			"vcs": "git",
-			"revision": "87d4004f2ab62d0d255e0a38f1680aa534549fe3",
+			"revision": "bf82308e8c8546dc2b945157173eb8a959ae9505",
 			"branch": "master",
 			"notests": true
 		},
@@ -96,7 +96,7 @@
 			"importpath": "github.com/gorilla/websocket",
 			"repository": "https://github.com/gorilla/websocket",
 			"vcs": "git",
-			"revision": "2d1e4548da234d9cb742cc3628556fef86aafbac",
+			"revision": "e8f0f8aaa98dfb6586cbdf2978d511e3199a960a",
 			"branch": "master",
 			"notests": true
 		},
@@ -104,7 +104,7 @@
 			"importpath": "github.com/jessevdk/go-flags",
 			"repository": "https://github.com/jessevdk/go-flags",
 			"vcs": "git",
-			"revision": "4cc2832a6e6d1d3b815e2b9d544b2a4dfb3ce8fa",
+			"revision": "8bc97d602c3bfeb5fc6fc9b5a9c898f245495637",
 			"branch": "master",
 			"notests": true
 		},
@@ -128,7 +128,7 @@
 			"importpath": "github.com/mattn/go-colorable",
 			"repository": "https://github.com/mattn/go-colorable",
 			"vcs": "git",
-			"revision": "ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8",
+			"revision": "d228849504861217f796da67fae4f6e347643f15",
 			"branch": "master",
 			"notests": true
 		},
@@ -136,7 +136,7 @@
 			"importpath": "github.com/mattn/go-isatty",
 			"repository": "https://github.com/mattn/go-isatty",
 			"vcs": "git",
-			"revision": "66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8",
+			"revision": "30a891c33c7cde7b02a981314b4228ec99380cca",
 			"branch": "master",
 			"notests": true
 		},
@@ -160,7 +160,7 @@
 			"importpath": "golang.org/x/crypto/ssh/terminal",
 			"repository": "https://go.googlesource.com/crypto",
 			"vcs": "git",
-			"revision": "8e06e8ddd9629eb88639aba897641bff8031f1d3",
+			"revision": "ede567c8e044a5913dad1d1af3696d9da953104c",
 			"branch": "master",
 			"path": "/ssh/terminal",
 			"notests": true
@@ -169,7 +169,7 @@
 			"importpath": "golang.org/x/net/context",
 			"repository": "https://go.googlesource.com/net",
 			"vcs": "git",
-			"revision": "6d3beaea10370160dea67f5c9327ed791afd5389",
+			"revision": "4971afdc2f162e82d185353533d3cf16188a9f4e",
 			"branch": "master",
 			"path": "/context",
 			"notests": true
