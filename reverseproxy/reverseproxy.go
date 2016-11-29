@@ -77,6 +77,9 @@ func NewSingleHostReverseProxy(target *url.URL, ci inject.CopyInject) *ReversePr
 		if req.Header.Get("X-Forwarded-Host") == "" {
 			req.Header.Set("X-Forwarded-Host", req.Host)
 		}
+		if req.Header.Get("X-Forwarded-Proto") == "" {
+			req.Header.Set("X-Forwarded-Prot", req.URL.Scheme)
+		}
 
 		// Set "identity"-only content encoding, in order for injector to
 		// work on text response

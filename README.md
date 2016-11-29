@@ -249,19 +249,16 @@ devd --notfound index.html  /static
 
 Now, the following happens:
 
-* A request for */nonexistent.html* returns the contents of */index.html*.
-* A request for */bar/nonexistent.html* returns the contents of */bar/index.html*.
+* A request for */nonexistent.html* returns the contents of */index.html*
+* A request for */bar/nonexistent.html* returns the contents of */bar/index.html*
 * A request for */foo/bar/voing/index.html* returns the contents of */index.html*
 
-We could instead specify an absolute path in the route:
+We could instead specify an absolute path in the route, in which case the
+contents of */index.html* would be returned for all the examples above:
 
 ```
 devd --notfound /index.html  /static
 ```
-
-In this case the contents of */index.html* would be returned for all paths not
-found.
-
 
 
 ## Excluding files from livereload
@@ -292,9 +289,10 @@ use case, development servers will usually be running locally, often with
 self-signed certificates for testing. You shouldn't use devd in cases where
 upstream cert validation matters.
 
-The *X-Forwarded-Host* header is set to the devd server's address for reverse
-proxied traffic. You might need to enable support for this in your application
-for redirects and the like to work correctly.
+The *X-Forwarded-Host* and *X-Forwarded-Proto* headers are set to the devd
+server's address and protocol for reverse proxied traffic. You might need to
+enable support for this in your application for redirects and the like to work
+correctly.
 
 
 # Development
