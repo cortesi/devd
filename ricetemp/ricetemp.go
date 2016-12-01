@@ -4,6 +4,7 @@ package ricetemp
 import (
 	"html/template"
 	"os"
+	"strings"
 
 	"github.com/GeertJohan/go.rice"
 	"github.com/dustin/go-humanize"
@@ -11,6 +12,16 @@ import (
 
 func bytes(size int64) string {
 	return humanize.Bytes(uint64(size))
+}
+
+func fileType(f os.FileInfo) string {
+	if f.IsDir() {
+		return "dir"
+	}
+	if strings.HasPrefix(f.Name(), ".") {
+		return "hidden"
+	}
+	return "file"
 }
 
 // MustMakeTemplates makes templates, and panic on error
@@ -27,8 +38,9 @@ func MakeTemplates(rb *rice.Box) (*template.Template, error) {
 	tmpl := template.New("")
 
 	funcMap := template.FuncMap{
-		"bytes":   bytes,
-		"reltime": humanize.Time,
+		"bytes":    bytes,
+		"reltime":  humanize.Time,
+		"fileType": fileType,
 	}
 	tmpl.Funcs(funcMap)
 

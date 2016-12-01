@@ -50,6 +50,12 @@ func (p fileSlice) Less(i, j int) bool {
 	if b.IsDir() && !a.IsDir() {
 		return false
 	}
+	if strings.HasPrefix(a.Name(), ".") && !strings.HasPrefix(b.Name(), ".") {
+		return false
+	}
+	if strings.HasPrefix(b.Name(), ".") && !strings.HasPrefix(a.Name(), ".") {
+		return true
+	}
 	return a.Name() < b.Name()
 }
 

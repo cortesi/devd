@@ -4,11 +4,23 @@
             #files {
                 border-collapse: collapse;
             }
+            .dir a {
+                color: #0741d9;
+            }
+            .file a {
+                color: #0787d9;
+            }
+            .hidden a {
+                color: #a5b1b9;
+            }
             #files tr {
                 border-bottom: 1px solid #c0c0c0;
             }
             #files td {
                 padding: 10px;
+            }
+            #files .dir .name {
+                font-weight: bold
             }
             #files .empty {
                 font-style: italic;
@@ -25,7 +37,7 @@
         <h1>{{.Name}}</h1>
         <table id="files">
             {{ range .Files }}
-    			<tr>
+    			<tr class="{{ . | fileType  }}">
                     <td class="name">
                         <a href="{{.Name}}">{{.Name}}{{ if .IsDir }}/{{ end }}</a>
                     </td>
