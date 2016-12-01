@@ -328,6 +328,7 @@ func (fserver *FileServer) notFound(
 	w http.ResponseWriter,
 	r *http.Request,
 	name string,
+	dir *http.File,
 ) (err error) {
 	sm := http.NewServeMux()
 	seen := make(map[string]bool)
@@ -360,6 +361,18 @@ func (fserver *FileServer) notFound(
 		sm.HandleFunc(
 			"/",
 			func(response http.ResponseWriter, request *http.Request) {
+				if dir != nil {
+					d, err := (*dir).Stat()
+					if err != nil {
+						logger.Shout("Internal error: %s", err)
+						return
+					}
+					if checkLastModified(response, request, d.ModTime()) {
+						return
+					}
+					dirList(fserver.Inject, logger, response, name, *dir, fserver.Templates)
+					return
+				}
 				err = serveNotFound(fserver.Inject, fserver.Templates, w)
 				if err != nil {
 					logger.Shout("Internal error: %s", err)
@@ -387,11 +400,7 @@ func (fserver *FileServer) serveNotFoundFile(
 	defer func() { _ = f.Close() }()
 
 	d, err := f.Stat()
-	if err != nil {
-		return true, nil
-	}
-
-	if d.IsDir() {
+	if err != nil || d.IsDir() {
 		return true, nil
 	}
 
@@ -428,7 +437,7 @@ func (fserver *FileServer) serveFile(
 	f, err := fserver.Root.Open(name)
 	if err != nil {
 		logger.WarnAs("debug", "debug fileserver: %s", err)
-		if err := fserver.notFound(logger, w, r, name); err != nil {
+		if err := fserver.notFound(logger, w, r, name, nil); err != nil {
 			logger.Shout("Internal error: %s", err)
 		}
 		return
@@ -438,7 +447,7 @@ func (fserver *FileServer) serveFile(
 	d, err1 := f.Stat()
 	if err1 != nil {
 		logger.WarnAs("debug", "debug fileserver: %s", err)
-		if err := fserver.notFound(logger, w, r, name); err != nil {
+		if err := fserver.notFound(logger, w, r, name, nil); err != nil {
 			logger.Shout("Internal error: %s", err)
 		}
 		return
@@ -478,10 +487,9 @@ func (fserver *FileServer) serveFile(
 
 	// Still a directory? (we didn't find an index.html file)
 	if d.IsDir() {
-		if checkLastModified(w, r, d.ModTime()) {
-			return
+		if err := fserver.notFound(logger, w, r, name, &f); err != nil {
+			logger.Shout("Internal error: %s", err)
 		}
-		dirList(fserver.Inject, logger, w, name, f, fserver.Templates)
 		return
 	}
 
