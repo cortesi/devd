@@ -294,6 +294,35 @@ func notFoundSearchPaths(pth string, spec string) []string {
 	return ret
 }
 
+// Checks whether the incoming request has the same expected type as an
+// over-ride specification.
+func matchTypes(spec string, req string) bool {
+	sext := path.Ext(spec)
+	var rext string
+	if strings.HasSuffix(req, "/") {
+		rext = ".html"
+	} else {
+		rext = path.Ext(req)
+	}
+	if strings.ToLower(rext) == strings.ToLower(sext) {
+		return true
+	}
+	smime, _, err := mime.ParseMediaType(mime.TypeByExtension(sext))
+	if err != nil {
+		return false
+	}
+	rmime, _, err := mime.ParseMediaType(mime.TypeByExtension(rext))
+	if err != nil {
+		return false
+	}
+
+	if smime == rmime {
+		return true
+	}
+
+	return false
+}
+
 func (fserver *FileServer) notFound(
 	logger termlog.Logger,
 	w http.ResponseWriter,
@@ -308,13 +337,15 @@ func (fserver *FileServer) notFound(
 			nfr.MuxMatch(),
 			func(nfr routespec.RouteSpec) func(w http.ResponseWriter, r *http.Request) {
 				return func(w http.ResponseWriter, r *http.Request) {
-					for _, pth := range notFoundSearchPaths(name, nfr.Value) {
-						next, err := fserver.serveNotFoundFile(w, r, pth)
-						if err != nil {
-							logger.Shout("Unable to serve not-found override: %s", err)
-						}
-						if !next {
-							return
+					if matchTypes(nfr.Value, r.URL.Path) {
+						for _, pth := range notFoundSearchPaths(name, nfr.Value) {
+							next, err := fserver.serveNotFoundFile(w, r, pth)
+							if err != nil {
+								logger.Shout("Unable to serve not-found override: %s", err)
+							}
+							if !next {
+								return
+							}
 						}
 					}
 					err = serveNotFound(fserver.Inject, fserver.Templates, w)
@@ -353,7 +384,7 @@ func (fserver *FileServer) serveNotFoundFile(
 	if err != nil {
 		return true, nil
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	d, err := f.Stat()
 	if err != nil {
@@ -402,7 +433,7 @@ func (fserver *FileServer) serveFile(
 		}
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	d, err1 := f.Stat()
 	if err1 != nil {
@@ -435,7 +466,7 @@ func (fserver *FileServer) serveFile(
 		index := name + indexPage
 		ff, err := fserver.Root.Open(index)
 		if err == nil {
-			defer ff.Close()
+			defer func() { _ = ff.Close() }()
 			dd, err := ff.Stat()
 			if err == nil {
 				name = index

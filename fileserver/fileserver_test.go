@@ -98,6 +98,27 @@ func TestNotFoundSearchPaths(t *testing.T) {
 	}
 }
 
+var matchTypesSpecs = []struct {
+	spec   string
+	path   string
+	result bool
+}{
+	{"/index.html", "/foo.png", false},
+	{"/index.html", "/foo.html", true},
+	{"/index.unknown", "/foo.unknown", true},
+	{"/index.html", "/foo/", true},
+	{"/index.html", "/foo/bar.htm", true},
+}
+
+func TestMatchTypes(t *testing.T) {
+	for _, tt := range matchTypesSpecs {
+		m := matchTypes(tt.spec, tt.path)
+		if m != tt.result {
+			t.Errorf("Wanted %#v, got %#v", tt.result, m)
+		}
+	}
+}
+
 func TestServeFile(t *testing.T) {
 	defer afterTest(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -156,7 +177,7 @@ func TestFSRedirect(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		res.Body.Close()
+		_ = res.Body.Close()
 		if g, e := res.Request.URL.Path, data.redirect; g != e {
 			t.Errorf("redirect from %s: got %s, want %s", data.original, g, e)
 		}
@@ -239,7 +260,7 @@ func TestFileServerImplicitLeadingSlash(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ReadAll %s: %v", suffix, err)
 		}
-		res.Body.Close()
+		_ = res.Body.Close()
 		return string(b)
 	}
 	if s := get("/bar/"); !strings.Contains(s, ">foo.txt<") {
@@ -263,7 +284,7 @@ func TestDirJoin(t *testing.T) {
 		if err != nil {
 			t.Fatalf("open of %s: %v", name, err)
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		gfi, err := f.Stat()
 		if err != nil {
 			t.Fatalf("stat of %s: %v", name, err)
@@ -293,7 +314,7 @@ func TestEmptyDirOpenCWD(t *testing.T) {
 		if err != nil {
 			t.Fatalf("open of %s: %v", name, err)
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 	}
 	test(http.Dir(""))
 	test(http.Dir("."))
@@ -322,7 +343,7 @@ func TestServeFileContentType(t *testing.T) {
 		if h := resp.Header["Content-Type"]; !reflect.DeepEqual(h, want) {
 			t.Errorf("Content-Type mismatch: got %v, want %v", h, want)
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 	get("0", []string{"text/plain; charset=utf-8"})
 	get("1", []string{ctype})
@@ -339,7 +360,7 @@ func TestServeFileMimeType(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	want := "text/css; charset=utf-8"
 	if h := resp.Header.Get("Content-Type"); h != want {
 		t.Errorf("Content-Type mismatch: got %q, want %q", h, want)
@@ -356,7 +377,7 @@ func TestServeFileFromCWD(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r.Body.Close()
+	_ = r.Body.Close()
 	if r.StatusCode != 200 {
 		t.Fatalf("expected 200 OK, got %s", r.Status)
 	}
@@ -373,7 +394,7 @@ func TestServeFileWithContentEncoding(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if g, e := resp.ContentLength, int64(-1); g != e {
 		t.Errorf("Content-Length mismatch: got %d, want %d", g, e)
 	}
@@ -405,7 +426,7 @@ func TestServeIndexHtml(t *testing.T) {
 		if s := string(b); s != want {
 			t.Errorf("for path %q got %q, want %q", path, s, want)
 		}
-		res.Body.Close()
+		_ = res.Body.Close()
 	}
 }
 
@@ -522,7 +543,7 @@ func TestNotFoundOverride(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 	if res.StatusCode != 200 {
 		t.Error("Expected to find over-ride file.")
 	}
@@ -531,7 +552,7 @@ func TestNotFoundOverride(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 	if res.StatusCode != 200 {
 		t.Error("Expected to find over-ride file.")
 	}
@@ -540,7 +561,7 @@ func TestNotFoundOverride(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 	if res.StatusCode != 404 {
 		t.Error("Expected to find over-ride file.")
 	}
@@ -549,7 +570,7 @@ func TestNotFoundOverride(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 	if res.StatusCode != 404 {
 		t.Error("Expected to find over-ride file.")
 	}
@@ -598,7 +619,7 @@ func TestDirectoryIfNotModified(t *testing.T) {
 	if string(b) != indexContents {
 		t.Fatalf("Got body %q; want %q", b, indexContents)
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 
 	lastMod := res.Header.Get("Last-Modified")
 	if lastMod != fileModStr {
@@ -615,7 +636,7 @@ func TestDirectoryIfNotModified(t *testing.T) {
 	if res.StatusCode != 304 {
 		t.Fatalf("Code after If-Modified-Since request = %v; want 304", res.StatusCode)
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 
 	// Advance the index.html file's modtime, but not the directory's.
 	indexFile.modtime = indexFile.modtime.Add(1 * time.Hour)
@@ -627,7 +648,7 @@ func TestDirectoryIfNotModified(t *testing.T) {
 	if res.StatusCode != 200 {
 		t.Fatalf("Code after second If-Modified-Since request = %v; want 200; res is %#v", res.StatusCode, res)
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 }
 
 func mustStat(t *testing.T, fileName string) os.FileInfo {
@@ -774,8 +795,11 @@ func TestServeContent(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		io.Copy(ioutil.Discard, res.Body)
-		res.Body.Close()
+		_, err = io.Copy(ioutil.Discard, res.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = res.Body.Close()
 		if res.StatusCode != tt.wantStatus {
 			t.Errorf("test %q: status = %d; want %d", testName, res.StatusCode, tt.wantStatus)
 		}
@@ -806,7 +830,7 @@ func TestLinuxSendfile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 
 	var buf bytes.Buffer
 	child := exec.Command("strace", "-f", "-q", "-e", "trace=sendfile,sendfile64", os.Args[0], "-test.run=TestLinuxSendfileChild")

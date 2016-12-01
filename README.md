@@ -260,6 +260,11 @@ contents of */index.html* would be returned for all the examples above:
 devd --notfound /index.html  /static
 ```
 
+Devd only serves an over-ride page if the expected type of the incoming request
+matches that of the override specification. We do this by looking at the file
+extension and expected MIME types of the over-ride and request, with
+directory requests assumed to be of type *text/html*. This prevents issues where, for instance, an HTML over-ride page might be served where images are expected.
+
 
 ## Excluding files from livereload
 
