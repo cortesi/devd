@@ -29,7 +29,7 @@ import (
 
 const (
 	// Version is the current version of devd
-	Version  = "0.6"
+	Version  = "0.7"
 	portLow  = 8000
 	portHigh = 10000
 )

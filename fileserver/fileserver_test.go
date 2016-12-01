@@ -41,6 +41,7 @@ func ServeFile(w http.ResponseWriter, r *http.Request, name string) {
 	logger.Quiet()
 
 	fs := FileServer{
+		"version",
 		http.Dir(dir),
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
@@ -162,6 +163,7 @@ func TestFSRedirect(t *testing.T) {
 		http.StripPrefix(
 			"/test",
 			&FileServer{
+				"version",
 				http.Dir("."),
 				inject.CopyInject{},
 				ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
@@ -196,6 +198,7 @@ func _TestFileServerCleans(t *testing.T) {
 	defer afterTest(t)
 	ch := make(chan string, 1)
 	fs := &FileServer{
+		"version",
 		&testFileSystem{
 			func(name string) (http.File, error) {
 				ch <- name
@@ -242,6 +245,7 @@ func TestFileServerImplicitLeadingSlash(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 	fs := &FileServer{
+		"version",
 		http.Dir(tempDir),
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
@@ -405,6 +409,7 @@ func TestServeIndexHtml(t *testing.T) {
 	const want = "index.html says hello\n"
 
 	fs := &FileServer{
+		"version",
 		http.Dir("."),
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
@@ -433,6 +438,7 @@ func TestServeIndexHtml(t *testing.T) {
 func TestFileServerZeroByte(t *testing.T) {
 	defer afterTest(t)
 	fs := &FileServer{
+		"version",
 		http.Dir("."),
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
@@ -527,6 +533,7 @@ func TestNotFoundOverride(t *testing.T) {
 	}
 
 	fs := &FileServer{
+		"version",
 		fsys,
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
@@ -598,6 +605,7 @@ func TestDirectoryIfNotModified(t *testing.T) {
 	}
 
 	fs := &FileServer{
+		"version",
 		fsys,
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
@@ -897,6 +905,7 @@ func TestLinuxSendfileChild(*testing.T) {
 	mux := http.NewServeMux()
 
 	fs := &FileServer{
+		"version",
 		http.Dir("testdata"),
 		inject.CopyInject{},
 		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),

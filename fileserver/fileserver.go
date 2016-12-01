@@ -58,8 +58,9 @@ func (p fileSlice) Swap(i, j int) {
 }
 
 type dirData struct {
-	Name  string
-	Files fileSlice
+	Version string
+	Name    string
+	Files   fileSlice
 }
 
 func stripPrefix(prefix string, path string) string {
@@ -70,22 +71,6 @@ func stripPrefix(prefix string, path string) string {
 		return p
 	}
 	return path
-}
-
-func dirList(ci inject.CopyInject, logger termlog.Logger, w http.ResponseWriter, name string, f http.File, templates *template.Template) {
-	w.Header().Set("Cache-Control", "no-store, must-revalidate")
-	files, err := f.Readdir(0)
-	if err != nil {
-		logger.Shout("Error reading directory for listing: %s", err)
-		return
-	}
-	sortedFiles := fileSlice(files)
-	sort.Sort(sortedFiles)
-	data := dirData{Name: name, Files: sortedFiles}
-	err = ci.ServeTemplate(http.StatusOK, w, templates.Lookup("dirlist.html"), data)
-	if err != nil {
-		logger.Shout("Failed to generate dir listing: %s", err)
-	}
 }
 
 // errSeeker is returned by ServeContent's sizeFunc when the content
@@ -236,6 +221,7 @@ func localRedirect(w http.ResponseWriter, r *http.Request, newPath string) {
 //
 //     http.Handle("/", &fileserver.FileServer{Root: http.Dir("/tmp")})
 type FileServer struct {
+	Version        string
 	Root           http.FileSystem
 	Inject         inject.CopyInject
 	Templates      *template.Template
@@ -323,6 +309,31 @@ func matchTypes(spec string, req string) bool {
 	return false
 }
 
+func (fserver *FileServer) dirList(logger termlog.Logger, w http.ResponseWriter, name string, f http.File) {
+	w.Header().Set("Cache-Control", "no-store, must-revalidate")
+	files, err := f.Readdir(0)
+	if err != nil {
+		logger.Shout("Error reading directory for listing: %s", err)
+		return
+	}
+	sortedFiles := fileSlice(files)
+	sort.Sort(sortedFiles)
+	data := dirData{
+		Version: fserver.Version,
+		Name:    name,
+		Files:   sortedFiles,
+	}
+	err = fserver.Inject.ServeTemplate(
+		http.StatusOK,
+		w,
+		fserver.Templates.Lookup("dirlist.html"),
+		data,
+	)
+	if err != nil {
+		logger.Shout("Failed to generate dir listing: %s", err)
+	}
+}
+
 func (fserver *FileServer) notFound(
 	logger termlog.Logger,
 	w http.ResponseWriter,
@@ -370,7 +381,7 @@ func (fserver *FileServer) notFound(
 					if checkLastModified(response, request, d.ModTime()) {
 						return
 					}
-					dirList(fserver.Inject, logger, response, name, *dir, fserver.Templates)
+					fserver.dirList(logger, response, name, *dir)
 					return
 				}
 				err = serveNotFound(fserver.Inject, fserver.Templates, w)

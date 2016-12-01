@@ -13,6 +13,12 @@
             #files .empty {
                 font-style: italic;
             }
+            .footer {
+                width: 100%;
+                margin-top: 2em;
+                text-align: right;
+                font-style: italic;
+            }
         </style>
     </head>
     <body>
@@ -30,5 +36,8 @@
                 <tr><td class="empty" span="2">No files found.</td></tr>
             {{ end }}
         </table>
+        <div class="footer">
+            {{ .Version }}
+        </div>
     </body>
 </html>

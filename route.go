@@ -70,6 +70,7 @@ func newFilesystemEndpoint(path string, notfound []string) (*filesystemEndpoint,
 
 func (ep filesystemEndpoint) Handler(prefix string, templates *template.Template, ci inject.CopyInject) httpctx.Handler {
 	return &fileserver.FileServer{
+		Version:        "devd " + Version,
 		Root:           http.Dir(ep.Root),
 		Inject:         ci,
 		Templates:      templates,
