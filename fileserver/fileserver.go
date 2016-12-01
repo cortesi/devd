@@ -63,6 +63,10 @@ type dirData struct {
 	Files   fileSlice
 }
 
+type fourohfourData struct {
+	Version string
+}
+
 func stripPrefix(prefix string, path string) string {
 	if prefix == "" {
 		return path
@@ -247,14 +251,6 @@ func (fserver *FileServer) ServeHTTPContext(
 	fserver.serveFile(logger, w, r, path.Clean(upath), true)
 }
 
-func serveNotFound(ci inject.CopyInject, templates *template.Template, w http.ResponseWriter) error {
-	err := ci.ServeTemplate(http.StatusNotFound, w, templates.Lookup("404.html"), nil)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // Given a path and a "not found" over-ride specification, return an array of
 // over-ride paths that should be considered for serving, in priority order. We
 // assume that path is a sub-path above a certain root, and we never return
@@ -309,6 +305,22 @@ func matchTypes(spec string, req string) bool {
 	return false
 }
 
+func (fserver *FileServer) serve404(w http.ResponseWriter) error {
+	d := fourohfourData{
+		Version: fserver.Version,
+	}
+	err := fserver.Inject.ServeTemplate(
+		http.StatusNotFound,
+		w,
+		fserver.Templates.Lookup("404.html"),
+		&d,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (fserver *FileServer) dirList(logger termlog.Logger, w http.ResponseWriter, name string, f http.File) {
 	w.Header().Set("Cache-Control", "no-store, must-revalidate")
 	files, err := f.Readdir(0)
@@ -360,7 +372,7 @@ func (fserver *FileServer) notFound(
 							}
 						}
 					}
-					err = serveNotFound(fserver.Inject, fserver.Templates, w)
+					err = fserver.serve404(w)
 					if err != nil {
 						logger.Shout("Internal error: %s", err)
 					}
@@ -384,7 +396,7 @@ func (fserver *FileServer) notFound(
 					fserver.dirList(logger, response, name, *dir)
 					return
 				}
-				err = serveNotFound(fserver.Inject, fserver.Templates, w)
+				err = fserver.serve404(w)
 				if err != nil {
 					logger.Shout("Internal error: %s", err)
 				}

@@ -1,7 +1,22 @@
 <html>
     <head>
+        <style>
+            p {
+                padding: 20px;
+                font-size: 3em;
+            }
+            .footer {
+                width: 100%;
+                margin-top: 2em;
+                text-align: right;
+                font-style: italic;
+            }
+        </style>
     </head>
     <body>
-        404: Page not found
+        <p>404: Page not found</p>
+        <div class="footer">
+            {{ .Version }}
+        </div>
     </body>
 </html>
