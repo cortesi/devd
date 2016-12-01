@@ -10,6 +10,9 @@
             #files td {
                 padding: 10px;
             }
+            #files .empty {
+                font-style: italic;
+            }
         </style>
     </head>
     <body>
@@ -23,6 +26,8 @@
                     <td class="size">{{ .Size | bytes }}</td>
                     <td class="modified">{{ .ModTime | reltime }}</td>
                 </tr>
+            {{ else }}
+                <tr><td class="empty" span="2">No files found.</td></tr>
             {{ end }}
         </table>
     </body>
