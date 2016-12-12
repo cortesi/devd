@@ -106,9 +106,15 @@ var matchTypesSpecs = []struct {
 }{
 	{"/index.html", "/foo.png", false},
 	{"/index.html", "/foo.html", true},
+	{"/index/", "/foo.html", true},
+	{"/index", "/foo.html", true},
 	{"/index.unknown", "/foo.unknown", true},
 	{"/index.html", "/foo/", true},
 	{"/index.html", "/foo/bar.htm", true},
+	{"/index", "/foo/bar.html", true},
+	{"/index", "/foo/bar.htm", true},
+	{"/index", "/foo", true},
+	{"/usr/bob.foo", "/foo", true},
 }
 
 func TestMatchTypes(t *testing.T) {

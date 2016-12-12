@@ -1,3 +1,10 @@
+# v0.7: 8 December 2016
+
+* Add the --notfound flag, which specifies over-rides when the static file sever can't find a file. This is useful for single-page JS app development.
+* Improved directory listings, nicer 404 pages.
+* X-Forwarded-Proto is now added to reverse proxied requests.
+
+
 # v0.6: 24 September 2016
 
 * Fix support for MacOS Sierra. This just involved a recompile to fix a compatibility issue between older versions of the Go toolchain and Sierra.

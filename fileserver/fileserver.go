@@ -282,32 +282,28 @@ func notFoundSearchPaths(pth string, spec string) []string {
 	return ret
 }
 
+// Get the media type for an extension, via a MIME lookup, defaulting to
+// "text/html".
+func _getType(ext string) string {
+	typ := mime.TypeByExtension(ext)
+	if typ == "" {
+		return "text/html"
+	}
+	smime, _, err := mime.ParseMediaType(typ)
+	if err != nil {
+		return "text/html"
+	}
+	return smime
+}
+
 // Checks whether the incoming request has the same expected type as an
 // over-ride specification.
 func matchTypes(spec string, req string) bool {
-	sext := path.Ext(spec)
-	var rext string
-	if strings.HasSuffix(req, "/") {
-		rext = ".html"
-	} else {
-		rext = path.Ext(req)
-	}
-	if strings.ToLower(rext) == strings.ToLower(sext) {
-		return true
-	}
-	smime, _, err := mime.ParseMediaType(mime.TypeByExtension(sext))
-	if err != nil {
-		return false
-	}
-	rmime, _, err := mime.ParseMediaType(mime.TypeByExtension(rext))
-	if err != nil {
-		return false
-	}
-
+	smime := _getType(path.Ext(spec))
+	rmime := _getType(path.Ext(req))
 	if smime == rmime {
 		return true
 	}
-
 	return false
 }
 
