@@ -79,6 +79,11 @@ var newSpecTests = []struct {
 		nil,
 		"Websocket protocol not supported: ws://three",
 	},
+	{
+		"one=:1234",
+		&Route{"one.devd.io", "/", tForwardEndpoint("http://localhost:1234")},
+		"",
+	},
 }
 
 func TestParseSpec(t *testing.T) {

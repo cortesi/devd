@@ -215,6 +215,12 @@ Similarly, a simple reverse proxy can be started like this:
 devd http://localhost:8888
 ```
 
+There is also a shortcut for reverse proxying to localhost:
+
+```
+devd :8888
+
+```
 
 ### Serving default content for files not found
 
