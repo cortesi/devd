@@ -70,6 +70,9 @@ func ParseRouteSpec(s string) (*RouteSpec, error) {
 			path = "/" + seq[1]
 		}
 	}
+	if value[0] == ':' {
+		value = "http://localhost" + value
+	}
 	isURL, err := checkURL(value)
 	if err != nil {
 		return nil, err
