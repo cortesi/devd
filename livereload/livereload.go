@@ -33,7 +33,7 @@ const (
 var Injector = inject.CopyInject{
 	Within:  1024 * 30,
 	Marker:  regexp.MustCompile(`<\/head>`),
-	Payload: []byte(`<script src="/.devd.livereload.js"></script>`),
+	Payload: []byte(`<script src="http://devd.io/.devd.livereload.js"></script>`),
 }
 
 // Server implements a Livereload server
