@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -201,5 +202,41 @@ func TestReverseProxyFlushInterval(t *testing.T) {
 		// OK
 	case <-time.After(5 * time.Second):
 		t.Error("maxLatencyWriter flushLoop() never exited")
+	}
+}
+
+func TestReverseProxyGzip(t *testing.T) {
+	const expected = "abcdefghi"
+	compressedResponse := []byte{0x1f, 0x8b, 0x8, 0x0, 0x0, 0x9, 0x6e, 0x88, 0x0, 0xff, 0x4a, 0x4c, 0x4a, 0x4e, 0xcf, 0xc8, 0x4, 0x4, 0x0, 0x0, 0xff, 0xff, 0x6a, 0xe4, 0xd9, 0x6c, 0x6, 0x0, 0x0, 0x0}
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Encoding", "gzip")
+		w.Write(compressedResponse)
+	}))
+	defer backend.Close()
+
+	backendURL, err := url.Parse(backend.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	injector := inject.CopyInject{
+		Within:  6,
+		Marker:  regexp.MustCompile(`ghi`),
+		Payload: []byte(`def`),
+	}
+	proxyHandler := NewSingleHostReverseProxy(backendURL, injector)
+
+	frontend := httptest.NewServer(proxyHandler)
+	defer frontend.Close()
+
+	req, _ := http.NewRequest("GET", frontend.URL, nil)
+	req.Close = true
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	defer res.Body.Close()
+	if bodyBytes, _ := ioutil.ReadAll(res.Body); string(bodyBytes) != expected {
+		t.Errorf("got body %q; expected %q", bodyBytes, expected)
 	}
 }
