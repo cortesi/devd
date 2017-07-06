@@ -23,7 +23,6 @@ type AuthOptions struct {
 	Realm               string
 	User                string
 	Password            string
-	AuthFunc            func(string, string, *http.Request) bool
 	UnauthorizedHandler http.Handler
 }
 
@@ -49,23 +48,13 @@ func (b basicAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (b *basicAuth) authenticate(r *http.Request) bool {
 	const basicScheme string = "Basic "
 
-	if r == nil {
-		return false
-	}
-
-	// In simple mode, prevent authentication with empty credentials if User is
-	// not set. Allow empty passwords to support non-password use-cases.
-	if b.opts.AuthFunc == nil && b.opts.User == "" {
-		return false
-	}
-
 	// Confirm the request is sending Basic Authentication credentials.
 	auth := r.Header.Get("Authorization")
 	if !strings.HasPrefix(auth, basicScheme) {
 		return false
 	}
 
-	// Get the plain-text username and password from the request.
+	// Get the plain-text username and password from the request
 	// The first six characters are skipped - e.g. "Basic ".
 	str, err := base64.StdEncoding.DecodeString(auth[len(basicScheme):])
 	if err != nil {
@@ -81,24 +70,10 @@ func (b *basicAuth) authenticate(r *http.Request) bool {
 		return false
 	}
 
-	givenUser := string(creds[0])
-	givenPass := string(creds[1])
-
-	// Default to Simple mode if no AuthFunc is defined.
-	if b.opts.AuthFunc == nil {
-		b.opts.AuthFunc = b.simpleBasicAuthFunc
-	}
-
-	return b.opts.AuthFunc(givenUser, givenPass, r)
-}
-
-// simpleBasicAuthFunc authenticates the supplied username and password against
-// the User and Password set in the Options struct.
-func (b *basicAuth) simpleBasicAuthFunc(user, pass string, r *http.Request) bool {
 	// Equalize lengths of supplied and required credentials
 	// by hashing them
-	givenUser := sha256.Sum256([]byte(user))
-	givenPass := sha256.Sum256([]byte(pass))
+	givenUser := sha256.Sum256(creds[0])
+	givenPass := sha256.Sum256(creds[1])
 	requiredUser := sha256.Sum256([]byte(b.opts.User))
 	requiredPass := sha256.Sum256([]byte(b.opts.Password))
 
@@ -133,7 +108,7 @@ func defaultUnauthorizedHandler(w http.ResponseWriter, r *http.Request) {
 //     import(
 //            "net/http"
 //            "github.com/zenazn/goji"
-//            "github.com/goji/httpauth"
+//            "github.com/zenazn/goji/web/httpauth"
 //     )
 //
 //     func main() {

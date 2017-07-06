@@ -306,6 +306,4 @@ correctly.
 
 The scripts used to build this package for distribution can be found
 [here](https://github.com/cortesi/godist). External packages are vendored using
-[gvt](https://github.com/FiloSottile/gvt), and I use
-[deplist](https://github.com/cespare/deplist) to make sure all dependencies are
-covered.
+[dep](https://github.com/golang/dep).

@@ -1,5 +1,4 @@
-// +build darwin freebsd openbsd netbsd dragonfly
-// +build !appengine
+// +build darwin freebsd openbsd netbsd
 
 package isatty
 
