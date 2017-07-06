@@ -12,7 +12,7 @@ class Devd < Formula
   homepage "https://github.com/cortesi/devd"
   url "https://github.com/cortesi/devd/archive/{version}.tar.gz"
   sha256 "{hash}"
-  revision 1
+  head "https://github.com/cortesi/devd.git"
 
   bottle do
     cellar :any_skip_relocation
@@ -24,30 +24,29 @@ class Devd < Formula
   depends_on "go" => :build
   {resources}
 
-def install
-   ENV["GOOS"] = "darwin"
-   ENV["GOARCH"] = MacOS.prefer_64_bit? ? "amd64" : "386"
-   ENV["GOPATH"] = buildpath
+  def install
+    ENV["GOOS"] = "darwin"
+    ENV["GOARCH"] = MacOS.prefer_64_bit? ? "amd64" : "386"
+    ENV["GOPATH"] = buildpath
+    (buildpath/"src/github.com/cortesi/devd").install buildpath.children
+    Language::Go.stage_deps resources, buildpath/"src"
+    cd "src/github.com/cortesi/devd" do
+      system "go", "build", "-o", bin/"devd", ".../cmd/devd"
+      prefix.install_metafiles
+    end
+  end
 
-   mkdir_p buildpath/"src/github.com/cortesi/"
-   ln_sf buildpath, buildpath/"src/github.com/cortesi/devd"
-   Language::Go.stage_deps resources, buildpath/"src"
+  test do
+    begin
+      io = IO.popen("#{{bin}}/devd #{{testpath}}")
+      sleep 2
+    ensure
+      Process.kill("SIGINT", io.pid)
+      Process.wait(io.pid)
+    end
 
-   system "go", "build", "-o", "#{{bin}}/devd", "./cmd/devd"
-   doc.install "README.md"
- end
-
- test do
-   begin
-     io = IO.popen("#{{bin}}/devd #{{testpath}}")
-     sleep 2
-   ensure
-     Process.kill("SIGINT", io.pid)
-     Process.wait(io.pid)
-   end
-
-   assert_match "Listening on http://devd.io", io.read
- end
+    assert_match "Listening on http://devd.io", io.read
+  end
 end
 """
 
@@ -69,7 +68,7 @@ def main(version):
     print TEMPLATE.format(
         resources=goresources,
         version=version,
-        hash = hash
+        hash=hash
     )
 
 
