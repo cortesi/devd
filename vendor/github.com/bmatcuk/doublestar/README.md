@@ -38,7 +38,10 @@ import "github.com/bmatcuk/doublestar"
 func Match(pattern, name string) (bool, error)
 ```
 
-Match returns true if `name` matches the file name `pattern` ([see below](#patterns)). `name` and `pattern` are split on forward slash (`/`) characters.
+Match returns true if `name` matches the file name `pattern` ([see below](#patterns)). `name` and `pattern` are split on forward slash (`/`) characters and may be relative or absolute.
+
+Note: `Match()` is meant to be a drop-in replacement for `path.Match()`. As such, it always uses `/` as the path separator. If you are writing code that will run on systems where `/` is not the path separator (such as Windows), you want to use `PathMatch()` (below) instead.
+
 
 ### PathMatch
 ```go
@@ -47,12 +50,16 @@ func PathMatch(pattern, name string) (bool, error)
 
 PathMatch returns true  if `name` matches the file name `pattern` ([see below](#patterns)). The difference between Match and PathMatch is that PathMatch will automatically use your system's path separator to split `name` and `pattern`.
 
+`PathMatch()` is meant to be a drop-in replacement for `filepath.Match()`.
+
 ### Glob
 ```go
 func Glob(pattern string) ([]string, error)
 ```
 
-Glob finds all files and directories in the filesystem that match `pattern` ([see below](#patterns)).
+Glob finds all files and directories in the filesystem that match `pattern` ([see below](#patterns)). `pattern` may be relative (to the current working directory), or absolute.
+
+`Glob()` is meant to be a drop-in replacement for `filepath.Glob()`.
 
 ## Patterns
 

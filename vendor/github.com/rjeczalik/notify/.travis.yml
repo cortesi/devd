@@ -1,8 +1,7 @@
 language: go
 
 go:
- - 1.4.3
- - 1.6
+ - 1.7.5
 
 os:
  - linux
@@ -11,7 +10,7 @@ os:
 matrix:
   include:
    - os: osx
-     go: 1.6
+     go: 1.7.5
      env:
       - GOFLAGS="-tags kqueue"
 
@@ -21,10 +20,9 @@ env:
    - PATH=$HOME/bin:$PATH
 
 install:
- - go get golang.org/x/tools/cmd/vet
  - go get -t -v ./...
 
 script:
- - go tool vet -all .
+ - "(go version | grep -q 1.4) || go tool vet -all ."
  - go install $GOFLAGS ./...
- - go test -v -race $GOFLAGS ./...
+ - go test -v -timeout 60s -race $GOFLAGS ./...

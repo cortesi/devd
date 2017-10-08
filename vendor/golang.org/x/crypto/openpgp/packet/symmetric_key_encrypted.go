@@ -85,13 +85,13 @@ func (ske *SymmetricKeyEncrypted) Decrypt(passphrase []byte) ([]byte, CipherFunc
 	c.XORKeyStream(plaintextKey, ske.encryptedKey)
 	cipherFunc := CipherFunction(plaintextKey[0])
 	if cipherFunc.blockSize() == 0 {
-		return nil, ske.CipherFunc, errors.UnsupportedError("unknown cipher: " + strconv.Itoa(int(ske.CipherFunc)))
+		return nil, ske.CipherFunc, errors.UnsupportedError("unknown cipher: " + strconv.Itoa(int(cipherFunc)))
 	}
 	plaintextKey = plaintextKey[1:]
-	if l := len(plaintextKey); l == 0 || l%cipherFunc.blockSize() != 0 {
-		return nil, cipherFunc, errors.StructuralError("length of decrypted key not a multiple of block size")
+	if l, cipherKeySize := len(plaintextKey), cipherFunc.KeySize(); l != cipherFunc.KeySize() {
+		return nil, cipherFunc, errors.StructuralError("length of decrypted key (" + strconv.Itoa(l) + ") " +
+			"not equal to cipher keysize (" + strconv.Itoa(cipherKeySize) + ")")
 	}
-
 	return plaintextKey, cipherFunc, nil
 }
 

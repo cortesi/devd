@@ -103,6 +103,7 @@ func pbkdf(hash func([]byte) []byte, u, v int, salt, password []byte, r int, ID 
 
 	//    6.  For i=1, 2, ..., c, do the following:
 	A := make([]byte, c*20)
+	var IjBuf []byte
 	for i := 0; i < c; i++ {
 		//        A.  Set A2=H^r(D||I). (i.e., the r-th hash of D||1,
 		//            H(H(H(... H(D||I))))
@@ -133,8 +134,22 @@ func pbkdf(hash func([]byte) []byte, u, v int, salt, password []byte, r int, ID 
 					Ij.Add(Ij, Bbi)
 					Ij.Add(Ij, one)
 					Ijb := Ij.Bytes()
+					// We expect Ijb to be exactly v bytes,
+					// if it is longer or shorter we must
+					// adjust it accordingly.
 					if len(Ijb) > v {
 						Ijb = Ijb[len(Ijb)-v:]
+					}
+					if len(Ijb) < v {
+						if IjBuf == nil {
+							IjBuf = make([]byte, v)
+						}
+						bytesShort := v - len(Ijb)
+						for i := 0; i < bytesShort; i++ {
+							IjBuf[i] = 0
+						}
+						copy(IjBuf[bytesShort:], Ijb)
+						Ijb = IjBuf
 					}
 					copy(I[j*v:(j+1)*v], Ijb)
 				}

@@ -65,7 +65,7 @@ type safeBag struct {
 
 type pkcs12Attribute struct {
 	Id    asn1.ObjectIdentifier
-	Value asn1.RawValue `ans1:"set"`
+	Value asn1.RawValue `asn1:"set"`
 }
 
 type encryptedPrivateKeyInfo struct {
@@ -108,6 +108,10 @@ func ToPEM(pfxData []byte, password string) ([]*pem.Block, error) {
 	}
 
 	bags, encodedPassword, err := getSafeContents(pfxData, encodedPassword)
+
+	if err != nil {
+		return nil, err
+	}
 
 	blocks := make([]*pem.Block, 0, len(bags))
 	for _, bag := range bags {

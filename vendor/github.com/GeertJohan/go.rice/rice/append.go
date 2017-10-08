@@ -6,32 +6,14 @@ import (
 	"go/build"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
-	"github.com/daaku/go.zipexe"
+	zipexe "github.com/daaku/go.zipexe"
 )
 
 func operationAppend(pkgs []*build.Package) {
-	if runtime.GOOS == "windows" {
-		_, err := exec.LookPath("zip")
-		if err != nil {
-			fmt.Println("#### WARNING ! ####")
-			fmt.Println("`rice append` is known not to work under windows because the `zip` command is not available. Please let me know if you got this to work (and how).")
-		}
-	}
-
-	// MARKED FOR DELETION
-	// This is actually not required, the append command now has the option --exec required.
-	// // check if package is a command
-	// if !pkg.IsCommand() {
-	// 	fmt.Println("Error: can not append to non-main package. Please follow instructions at github.com/GeertJohan/go.rice")
-	// 	os.Exit(1)
-	// }
-
 	// create tmp zipfile
 	tmpZipfileName := filepath.Join(os.TempDir(), fmt.Sprintf("ricebox-%d-%s.zip", time.Now().Unix(), randomString(10)))
 	verbosef("Will create tmp zipfile: %s\n", tmpZipfileName)
@@ -40,6 +22,10 @@ func operationAppend(pkgs []*build.Package) {
 		fmt.Printf("Error creating tmp zipfile: %s\n", err)
 		os.Exit(1)
 	}
+	defer func() {
+		tmpZipfile.Close()
+		os.Remove(tmpZipfileName)
+	}()
 
 	// find abs path for binary file
 	binfileName, err := filepath.Abs(flags.Append.Executable)
@@ -61,9 +47,19 @@ func operationAppend(pkgs []*build.Package) {
 		fmt.Printf("Error: unable to open executable file: %s\n", err)
 		os.Exit(1)
 	}
+	defer binfile.Close()
+
+	binfileInfo, err := binfile.Stat()
+	if err != nil {
+		fmt.Printf("Error: unable to stat executable file: %s\n", err)
+		os.Exit(1)
+	}
 
 	// create zip.Writer
 	zipWriter := zip.NewWriter(tmpZipfile)
+
+	// write the zip offset into the zip data
+	zipWriter.SetOffset(binfileInfo.Size())
 
 	for _, pkg := range pkgs {
 		// find boxes for this command
@@ -156,13 +152,6 @@ func operationAppend(pkgs []*build.Package) {
 	_, err = io.Copy(binfile, tmpZipfile)
 	if err != nil {
 		fmt.Printf("Error appending zipfile to executable: %s\n", err)
-		os.Exit(1)
-	}
-
-	zipA := exec.Command("zip", "-A", binfileName)
-	err = zipA.Run()
-	if err != nil {
-		fmt.Printf("Error setting zip offset: %s\n", err)
 		os.Exit(1)
 	}
 }

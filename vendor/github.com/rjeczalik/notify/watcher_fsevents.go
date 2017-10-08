@@ -12,8 +12,6 @@ import (
 	"sync/atomic"
 )
 
-// TODO(rjeczalik): get rid of calls to canonical, it's tree responsibility
-
 const (
 	failure = uint32(FSEventsMustScanSubDirs | FSEventsUserDropped | FSEventsKernelDropped)
 	filter  = uint32(FSEventsCreated | FSEventsRemoved | FSEventsRenamed |
@@ -133,7 +131,7 @@ func (w *watch) Dispatch(ev []FSEvent) {
 			ev[i].Flags, ev[i].Path, i, ev[i].ID, len(ev))
 		if ev[i].Flags&failure != 0 {
 			// TODO(rjeczalik): missing error handling
-			panic("unhandled error: " + Event(ev[i].Flags).String())
+			continue
 		}
 		if !strings.HasPrefix(ev[i].Path, w.path) {
 			continue
@@ -189,9 +187,6 @@ func newWatcher(c chan<- EventInfo) watcher {
 }
 
 func (fse *fsevents) watch(path string, event Event, isrec int32) (err error) {
-	if path, err = canonical(path); err != nil {
-		return err
-	}
 	if _, ok := fse.watches[path]; ok {
 		return errAlreadyWatched
 	}
@@ -211,9 +206,6 @@ func (fse *fsevents) watch(path string, event Event, isrec int32) (err error) {
 }
 
 func (fse *fsevents) unwatch(path string) (err error) {
-	if path, err = canonical(path); err != nil {
-		return
-	}
 	w, ok := fse.watches[path]
 	if !ok {
 		return errNotWatched

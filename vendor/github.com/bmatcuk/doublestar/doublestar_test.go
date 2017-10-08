@@ -2,88 +2,106 @@
 
 package doublestar
 
-import "testing"
+import (
+  "os"
+  "runtime"
+  "testing"
+  "path"
+  "path/filepath"
+)
 
 type MatchTest struct {
-  pattern, s string
-  match      bool
-  err        error
-  testGlob   bool
+  pattern, testPath []string   // a pattern and path to test the pattern on
+  shouldMatch       bool       // true if the pattern should match the path
+  expectedErr       error      // an expected error
+  testOnDisk        bool       // true: test pattern against files in "test" directory
 }
 
+// Tests which contain escapes and symlinks will not work on Windows
+var onWindows = runtime.GOOS == "windows"
+
 var matchTests = []MatchTest{
-  {"abc", "abc", true, nil, true},
-  {"*", "abc", true, nil, true},
-  {"*c", "abc", true, nil, true},
-  {"a*", "a", true, nil, true},
-  {"a*", "abc", true, nil, true},
-  {"a*", "ab/c", false, nil, true},
-  {"a*/b", "abc/b", true, nil, true},
-  {"a*/b", "a/c/b", false, nil, true},
-  {"a*b*c*d*e*/f", "axbxcxdxe/f", true, nil, true},
-  {"a*b*c*d*e*/f", "axbxcxdxexxx/f", true, nil, true},
-  {"a*b*c*d*e*/f", "axbxcxdxe/xxx/f", false, nil, true},
-  {"a*b*c*d*e*/f", "axbxcxdxexxx/fff", false, nil, true},
-  {"a*b?c*x", "abxbbxdbxebxczzx", true, nil, true},
-  {"a*b?c*x", "abxbbxdbxebxczzy", false, nil, true},
-  {"ab[c]", "abc", true, nil, true},
-  {"ab[b-d]", "abc", true, nil, true},
-  {"ab[e-g]", "abc", false, nil, true},
-  {"ab[^c]", "abc", false, nil, true},
-  {"ab[^b-d]", "abc", false, nil, true},
-  {"ab[^e-g]", "abc", true, nil, true},
-  {"a\\*b", "a*b", true, nil, true},
-  {"a\\*b", "ab", false, nil, true},
-  {"a?b", "a☺b", true, nil, true},
-  {"a[^a]b", "a☺b", true, nil, true},
-  {"a???b", "a☺b", false, nil, true},
-  {"a[^a][^a][^a]b", "a☺b", false, nil, true},
-  {"[a-ζ]*", "α", true, nil, true},
-  {"*[a-ζ]", "A", false, nil, true},
-  {"a?b", "a/b", false, nil, true},
-  {"a*b", "a/b", false, nil, true},
-  {"[\\]a]", "]", true, nil, true},
-  {"[\\-]", "-", true, nil, true},
-  {"[x\\-]", "x", true, nil, true},
-  {"[x\\-]", "-", true, nil, true},
-  {"[x\\-]", "z", false, nil, true},
-  {"[\\-x]", "x", true, nil, true},
-  {"[\\-x]", "-", true, nil, true},
-  {"[\\-x]", "a", false, nil, true},
-  {"[]a]", "]", false, ErrBadPattern, true},
-  {"[-]", "-", false, ErrBadPattern, true},
-  {"[x-]", "x", false, ErrBadPattern, true},
-  {"[x-]", "-", false, ErrBadPattern, true},
-  {"[x-]", "z", false, ErrBadPattern, true},
-  {"[-x]", "x", false, ErrBadPattern, true},
-  {"[-x]", "-", false, ErrBadPattern, true},
-  {"[-x]", "a", false, ErrBadPattern, true},
-  {"\\", "a", false, ErrBadPattern, true},
-  {"[a-b-c]", "a", false, ErrBadPattern, true},
-  {"[", "a", false, ErrBadPattern, true},
-  {"[^", "a", false, ErrBadPattern, true},
-  {"[^bc", "a", false, ErrBadPattern, true},
-  {"a[", "a", false, nil, false},
-  {"a[", "ab", false, ErrBadPattern, true},
-  {"*x", "xxx", true, nil, true},
-  {"a/**", "a", false, nil, true},
-  {"a/**", "a/b", true, nil, true},
-  {"a/**", "a/b/c", true, nil, true},
-  {"**/c", "c", true, nil, true},
-  {"**/c", "b/c", true, nil, true},
-  {"**/c", "a/b/c", true, nil, true},
-  {"a/**/b", "a/b", true, nil, true},
-  {"a/**/c", "a/b/c", true, nil, true},
-  {"a/**/d", "a/b/c/d", true, nil, true},
-  {"a/\\**", "a/b/c", false, nil, true},
-  {"a/\\**", "a/*", true, nil, true},
-  {"ab{c,d}", "abc", true, nil, true},
-  {"ab{c,d,*}", "abcde", true, nil, true},
-  {"ab{c,d}[", "abcd", false, ErrBadPattern, true},
+  {[]string{"abc"},                       []string{"abc"},                       true, nil, true},
+  {[]string{"*"},                         []string{"abc"},                       true, nil, true},
+  {[]string{"*c"},                        []string{"abc"},                       true, nil, true},
+  {[]string{"a*"},                        []string{"a"},                         true, nil, true},
+  {[]string{"a*"},                        []string{"abc"},                       true, nil, true},
+  {[]string{"a*"},                        []string{"ab", "c"},                   false, nil, true},
+  {[]string{"a*", "b"},                   []string{"abc", "b"},                  true, nil, true},
+  {[]string{"a*", "b"},                   []string{"a", "c", "b"},               false, nil, true},
+  {[]string{"a*b*c*d*e*", "f"},           []string{"axbxcxdxe", "f"},            true, nil, true},
+  {[]string{"a*b*c*d*e*", "f"},           []string{"axbxcxdxexxx", "f"},         true, nil, true},
+  {[]string{"a*b*c*d*e*", "f"},           []string{"axbxcxdxe", "xxx", "f"},     false, nil, true},
+  {[]string{"a*b*c*d*e*", "f"},           []string{"axbxcxdxexxx", "fff"},       false, nil, true},
+  {[]string{"a*b?c*x"},                   []string{"abxbbxdbxebxczzx"},          true, nil, true},
+  {[]string{"a*b?c*x"},                   []string{"abxbbxdbxebxczzy"},          false, nil, true},
+  {[]string{"ab[c]"},                     []string{"abc"},                       true, nil, true},
+  {[]string{"ab[b-d]"},                   []string{"abc"},                       true, nil, true},
+  {[]string{"ab[e-g]"},                   []string{"abc"},                       false, nil, true},
+  {[]string{"ab[^c]"},                    []string{"abc"},                       false, nil, true},
+  {[]string{"ab[^b-d]"},                  []string{"abc"},                       false, nil, true},
+  {[]string{"ab[^e-g]"},                  []string{"abc"},                       true, nil, true},
+  {[]string{"a\\*b"},                     []string{"ab"},                        false, nil, true},
+  {[]string{"a?b"},                       []string{"a☺b"},                       true, nil, true},
+  {[]string{"a[^a]b"},                    []string{"a☺b"},                       true, nil, true},
+  {[]string{"a???b"},                     []string{"a☺b"},                       false, nil, true},
+  {[]string{"a[^a][^a][^a]b"},            []string{"a☺b"},                       false, nil, true},
+  {[]string{"[a-ζ]*"},                    []string{"α"},                         true, nil, true},
+  {[]string{"*[a-ζ]"},                    []string{"A"},                         false, nil, true},
+  {[]string{"a?b"},                       []string{"a", "b"},                    false, nil, true},
+  {[]string{"a*b"},                       []string{"a", "b"},                    false, nil, true},
+  {[]string{"[\\]a]"},                    []string{"]"},                         true, nil, !onWindows},
+  {[]string{"[\\-]"},                     []string{"-"},                         true, nil, !onWindows},
+  {[]string{"[x\\-]"},                    []string{"x"},                         true, nil, !onWindows},
+  {[]string{"[x\\-]"},                    []string{"-"},                         true, nil, !onWindows},
+  {[]string{"[x\\-]"},                    []string{"z"},                         false, nil, !onWindows},
+  {[]string{"[\\-x]"},                    []string{"x"},                         true, nil, !onWindows},
+  {[]string{"[\\-x]"},                    []string{"-"},                         true, nil, !onWindows},
+  {[]string{"[\\-x]"},                    []string{"a"},                         false, nil, !onWindows},
+  {[]string{"[]a]"},                      []string{"]"},                         false, ErrBadPattern, true},
+  {[]string{"[-]"},                       []string{"-"},                         false, ErrBadPattern, true},
+  {[]string{"[x-]"},                      []string{"x"},                         false, ErrBadPattern, true},
+  {[]string{"[x-]"},                      []string{"-"},                         false, ErrBadPattern, true},
+  {[]string{"[x-]"},                      []string{"z"},                         false, ErrBadPattern, true},
+  {[]string{"[-x]"},                      []string{"x"},                         false, ErrBadPattern, true},
+  {[]string{"[-x]"},                      []string{"-"},                         false, ErrBadPattern, true},
+  {[]string{"[-x]"},                      []string{"a"},                         false, ErrBadPattern, true},
+  {[]string{"\\"},                        []string{"a"},                         false, ErrBadPattern, !onWindows},
+  {[]string{"[a-b-c]"},                   []string{"a"},                         false, ErrBadPattern, true},
+  {[]string{"["},                         []string{"a"},                         false, ErrBadPattern, true},
+  {[]string{"[^"},                        []string{"a"},                         false, ErrBadPattern, true},
+  {[]string{"[^bc"},                      []string{"a"},                         false, ErrBadPattern, true},
+  {[]string{"a["},                        []string{"a"},                         false, nil, false},
+  {[]string{"a["},                        []string{"ab"},                        false, ErrBadPattern, true},
+  {[]string{"*x"},                        []string{"xxx"},                       true, nil, true},
+  {[]string{"a", "**"},                   []string{"a"},                         false, nil, true},
+  {[]string{"a", "**"},                   []string{"a", "b"},                    true, nil, true},
+  {[]string{"a", "**"},                   []string{"a", "b", "c"},               true, nil, true},
+  {[]string{"**", "c"},                   []string{"c"},                         true, nil, true},
+  {[]string{"**", "c"},                   []string{"b", "c"},                    true, nil, true},
+  {[]string{"**", "c"},                   []string{"a", "b", "c"},               true, nil, true},
+  {[]string{"**", "c"},                   []string{"a", "b"},                    false, nil, true},
+  {[]string{"**", "c"},                   []string{"abcd"},                      false, nil, true},
+  {[]string{"**", "c"},                   []string{"a", "abc"},                  false, nil, true},
+  {[]string{"a", "**", "b"},              []string{"a", "b"},                    true, nil, true},
+  {[]string{"a", "**", "c"},              []string{"a", "b", "c"},               true, nil, true},
+  {[]string{"a", "**", "d"},              []string{"a", "b", "c", "d"},          true, nil, true},
+  {[]string{"a", "\\**"},                 []string{"a", "b", "c"},               false, nil, !onWindows},
+  {[]string{"ab{c,d}"},                   []string{"abc"},                       true, nil, true},
+  {[]string{"ab{c,d,*}"},                 []string{"abcde"},                     true, nil, true},
+  {[]string{"ab{c,d}["},                  []string{"abcd"},                      false, ErrBadPattern, true},
+  {[]string{"abc**"},                     []string{"abc"},                       true, nil, true},
+  {[]string{"**abc"},                     []string{"abc"},                       true, nil, true},
+  {[]string{"broken-symlink"},            []string{"broken-symlink"},            true, nil, !onWindows},
+  {[]string{"working-symlink", "c", "*"}, []string{"working-symlink", "c", "d"}, true, nil, !onWindows},
+  {[]string{"working-sym*", "*"},         []string{"working-symlink", "c"},      true, nil, !onWindows},
+  {[]string{"b", "**", "f"},              []string{"b", "symlink-dir", "f"},     true, nil, !onWindows},
 }
 
 func TestMatch(t *testing.T) {
   for idx, tt := range matchTests {
+    // Since Match() always uses "/" as the separator, we
+    // don't need to worry about the tt.testOnDisk flag
     testMatchWith(t, idx, tt)
   }
 }
@@ -91,41 +109,77 @@ func TestMatch(t *testing.T) {
 func testMatchWith(t *testing.T, idx int, tt MatchTest) {
   defer func() {
     if r := recover(); r != nil {
-      t.Errorf("#%v. Match(%#q, %#q) panicked: %#v", idx, tt.pattern, tt.s, r)
+      t.Errorf("#%v. Match(%#q, %#q) panicked: %#v", idx, tt.pattern, tt.testPath, r)
     }
   }()
 
-  ok, err := Match(tt.pattern, tt.s)
-  if ok != tt.match || err != tt.err {
-    t.Errorf("#%v. Match(%#q, %#q) = %v, %v want %v, %v", idx, tt.pattern, tt.s, ok, err, tt.match, tt.err)
+  // Match() always uses "/" as the separator
+  ok, err := Match(path.Join(tt.pattern...), path.Join(tt.testPath...))
+  if ok != tt.shouldMatch || err != tt.expectedErr {
+    t.Errorf("#%v. Match(%#q, %#q) = %v, %v want %v, %v", idx, tt.pattern, tt.testPath, ok, err, tt.shouldMatch, tt.expectedErr)
+  }
+}
+
+func TestPathMatch(t *testing.T) {
+  for idx, tt := range matchTests {
+    // Even though we aren't actually matching paths on disk, we are using
+    // PathMatch() which will use the system's separator. As a result, any
+    // patterns that might cause problems on-disk need to also be avoided
+    // here in this test.
+    if tt.testOnDisk {
+      testPathMatchWith(t, idx, tt)
+    }
+  }
+}
+
+func testPathMatchWith(t *testing.T, idx int, tt MatchTest) {
+  defer func() {
+    if r := recover(); r != nil {
+      t.Errorf("#%v. Match(%#q, %#q) panicked: %#v", idx, tt.pattern, tt.testPath, r)
+    }
+  }()
+
+  ok, err := PathMatch(filepath.Join(tt.pattern...), filepath.Join(tt.testPath...))
+  if ok != tt.shouldMatch || err != tt.expectedErr {
+    t.Errorf("#%v. Match(%#q, %#q) = %v, %v want %v, %v", idx, tt.pattern, tt.testPath, ok, err, tt.shouldMatch, tt.expectedErr)
   }
 }
 
 func TestGlob(t *testing.T) {
+  abspath, err := os.Getwd()
+  if err != nil {
+    t.Errorf("Error getting current working directory: %v", err)
+    return
+  }
+
   for idx, tt := range matchTests {
-    if tt.testGlob {
-      testGlobWith(t, idx, tt)
+    if tt.testOnDisk {
+      // test both relative paths and absolute paths
+      testGlobWith(t, idx, tt, "")
+      testGlobWith(t, idx, tt, abspath)
     }
   }
 }
 
-func testGlobWith(t *testing.T, idx int, tt MatchTest) {
+func testGlobWith(t *testing.T, idx int, tt MatchTest, basepath string) {
   defer func() {
     if r := recover(); r != nil {
       t.Errorf("#%v. Glob(%#q) panicked: %#v", idx, tt.pattern, r)
     }
   }()
 
-  matches, err := Glob("test/" + tt.pattern)
-  if inSlice("test/" + tt.s, matches) != tt.match {
-    if tt.match {
-      t.Errorf("#%v. Glob(%#q) = %#v - doesn't contain %v, but should", idx, tt.pattern, matches, tt.s)
+  pattern := filepath.Join(basepath, "test", filepath.Join(tt.pattern...))
+  testPath := filepath.Join(basepath, "test", filepath.Join(tt.testPath...))
+  matches, err := Glob(pattern)
+  if inSlice(testPath, matches) != tt.shouldMatch {
+    if tt.shouldMatch {
+      t.Errorf("#%v. Glob(%#q) = %#v - doesn't contain %v, but should", idx, tt.pattern, matches, tt.testPath)
     } else {
-      t.Errorf("#%v. Glob(%#q) = %#v - contains %v, but shouldn't", idx, tt.pattern, matches, tt.s)
+      t.Errorf("#%v. Glob(%#q) = %#v - contains %v, but shouldn't", idx, tt.pattern, matches, tt.testPath)
     }
   }
-  if err != tt.err {
-    t.Errorf("#%v. Glob(%#q) has error %v, but should be %v", idx, tt.pattern, err, tt.err)
+  if err != tt.expectedErr {
+    t.Errorf("#%v. Glob(%#q) has error %v, but should be %v", idx, tt.pattern, err, tt.expectedErr)
   }
 }
 

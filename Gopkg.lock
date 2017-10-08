@@ -5,7 +5,7 @@
   branch = "master"
   name = "github.com/GeertJohan/go.rice"
   packages = [".","embedded"]
-  revision = "0f3f5fde32fd1f755632a3d31ba2ec6d449e387b"
+  revision = "c02ca9a983da5807ddf7d796784928f5be4afd09"
 
 [[projects]]
   branch = "master"
@@ -23,7 +23,7 @@
   branch = "master"
   name = "github.com/bmatcuk/doublestar"
   packages = ["."]
-  revision = "4f612bd6c10e2ef68e2ea50aabc50c3681bbac86"
+  revision = "dd6a6f0a8cdfaaa88b08cf26cf1bc7d69003ee13"
 
 [[projects]]
   branch = "master"
@@ -47,89 +47,95 @@
   branch = "master"
   name = "github.com/dustin/go-humanize"
   packages = ["."]
-  revision = "c20a8bde38c8f5ba06f6600edf473705c96829d1"
+  revision = "79e699ccd02f240a1f1fbbdcee7e64c1c12e41aa"
 
 [[projects]]
-  branch = "master"
   name = "github.com/fatih/color"
   packages = ["."]
-  revision = "76d423163af754ff6423d2d9be0057fbf03c57c2"
+  revision = "570b54cabe6b8eb0bc2dfce68d964677d63b5260"
+  version = "v1.5.0"
 
 [[projects]]
   branch = "master"
   name = "github.com/goji/httpauth"
   packages = ["."]
-  revision = "c1b2bcd8769bd15cc56751223fd4b9f45ca987ca"
+  revision = "2da839ab0f4df05a6db5eb277995589dadbd4fb9"
 
 [[projects]]
-  branch = "master"
   name = "github.com/gorilla/websocket"
   packages = ["."]
-  revision = "a91eba7f97777409bc2c443f5534d41dd20c5720"
+  revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
   name = "github.com/juju/ratelimit"
   packages = ["."]
-  revision = "772f5c38e468398c4511514f4f6aa9a4185bc0a0"
+  revision = "5b9ff866471762aa2ab2dced63c9fb6f53921342"
 
 [[projects]]
   branch = "master"
   name = "github.com/kardianos/osext"
   packages = ["."]
-  revision = "345163ffe35aa66560a4cd7dddf00f3ae21c9fda"
+  revision = "ae77be60afb1dcacde03767a8c37337fad28ac14"
 
 [[projects]]
-  branch = "master"
+  name = "github.com/mattn/go-colorable"
+  packages = ["."]
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
+
+[[projects]]
   name = "github.com/mattn/go-isatty"
   packages = ["."]
-  revision = "7fcbc72f853b92b5720db4a6b8482be612daef24"
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
 
 [[projects]]
   branch = "master"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
-  revision = "d682a8f0cf139663a984ff12528da460ca963de9"
+  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
 
 [[projects]]
   branch = "master"
   name = "github.com/rjeczalik/notify"
   packages = ["."]
-  revision = "5dd6205716539662f8f14ab513552b41eab69d5d"
+  revision = "1aa3b9de8d8410413787ea2573433b6fed5f3685"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/shiena/ansicolor"
-  packages = ["."]
-  revision = "d445752f6f66f9cd987722f109149f6799cdf1de"
-
-[[projects]]
-  branch = "master"
   name = "github.com/toqueteos/webbrowser"
   packages = ["."]
   revision = "21fc9f95c83442fd164094666f7cb4f9fdd56cd6"
+  version = "v1.0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "c8b9e6388ef638d5a8a9d865c634befdc46a6784"
+  revision = "9419663f5a44be8b34ca85f08abc5fe1be11f8a3"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
-  revision = "a6577fac2d73be281a500b310739095313165611"
+  revision = "a04bdaca5b32abe1c069418fb7088ae607de5bd0"
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix","windows"]
+  revision = "ebfc5b4631820b793c9010c87fd8fef0f39eb082"
+
+[[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"
   packages = ["."]
-  revision = "e9044be3ab2a8e11d4e1f418d12f0790d57e8d70"
+  revision = "1087e65c9441605df944fb12c33f0fe7072d18ca"
+  version = "v2.2.5"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "30457deb7014beb9ae46ed9b0c916f0a6b2325ee16dea803e9b52d926f137da0"
+  inputs-digest = "cf1a06dc17f0bf13d465e60e51bb76fbd8175685a836a34287727393070091cc"
   solver-name = "gps-cdcl"
   solver-version = 1

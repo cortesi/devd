@@ -5,3 +5,4 @@
 
 *.rice-box.go
 *.rice-box.syso
+.wercker

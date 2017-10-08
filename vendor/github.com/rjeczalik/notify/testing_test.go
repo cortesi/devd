@@ -160,6 +160,10 @@ func newWatcherTest(t *testing.T, tree string) *W {
 	if err != nil {
 		t.Fatalf(`tmptree("", %q)=%v`, tree, err)
 	}
+	root, _, err = cleanpath(root)
+	if err != nil {
+		t.Fatalf(`cleanpath(%q)=%v`, root, err)
+	}
 	Sync()
 	return &W{
 		t:    t,
@@ -600,7 +604,7 @@ func (c *Call) String() string       { return fmt.Sprintf("%#v", c) }
 func (c *Call) Sys() interface{}     { return c.S }
 func (c *Call) isDir() (bool, error) { return c.Dir, nil }
 
-// CallSlice is a conveniance wrapper for a slice of Call values, which allows
+// CallSlice is a convenient wrapper for a slice of Call values, which allows
 // to sort them in ascending order.
 type CallSlice []Call
 

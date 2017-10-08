@@ -39,7 +39,11 @@ func setUpTestPkg(pkgName string, files []sourceFile) (*build.Package, func(), e
 		return nil, cleanup, err
 	}
 	for _, f := range files {
-		if err := ioutil.WriteFile(filepath.Join(dir, f.Name), f.Contents, 0660); err != nil {
+		fullPath := filepath.Join(dir, f.Name)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0770); err != nil {
+			return nil, cleanup, err
+		}
+		if err := ioutil.WriteFile(fullPath, f.Contents, 0660); err != nil {
 			return nil, cleanup, err
 		}
 	}
@@ -59,6 +63,39 @@ import (
 
 func main() {
 	rice.MustFindBox("foo")
+}
+`),
+		},
+	})
+	defer cleanup()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	expectedBoxes := []string{"foo"}
+	boxMap := findBoxes(pkg)
+	if err := expectBoxes(expectedBoxes, boxMap); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestFindOneBoxViaVariable(t *testing.T) {
+
+	pkg, cleanup, err := setUpTestPkg("foobar", []sourceFile{
+		{
+			"boxes.go",
+			[]byte(`package main
+
+import (
+	"github.com/GeertJohan/go.rice"
+)
+
+func main() {
+	conf := rice.Config{
+		LocateOrder: []rice.LocateMethod{rice.LocateEmbedded, rice.LocateAppended, rice.LocateFS},
+	}
+	conf.MustFindBox("foo")
 }
 `),
 		},
@@ -157,7 +194,7 @@ func FindBox(s string) {
 func LoadBoxes() {
 	rice := fakerice{}
 	rice.FindBox("foo")
-	
+
 	FindBox("bar")
 }
 `),
@@ -199,7 +236,7 @@ func FindBox(s string) {
 func LoadBoxes1() {
 	rice := fakerice{}
 	rice.FindBox("foo")
-	
+
 	FindBox("bar")
 }
 `),

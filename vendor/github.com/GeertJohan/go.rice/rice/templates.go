@@ -24,18 +24,18 @@ func init() {
 
 	// define files
 	{{range .Files}}{{.Identifier}} := &embedded.EmbeddedFile{
-		Filename:    ` + "`" + `{{.FileName}}` + "`" + `,
+		Filename:    {{.FileName | printf "%q"}},
 		FileModTime: time.Unix({{.ModTime}}, 0),
-		Content:     string({{.Content | printf "%#v"}}), //++ TODO: optimize? (double allocation) or does compiler already optimize this?
+		Content:     string({{.Content | printf "%q"}}),
 	}
 	{{end}}
 
 	// define dirs
 	{{range .Dirs}}{{.Identifier}} := &embedded.EmbeddedDir{
-		Filename:    ` + "`" + `{{.FileName}}` + "`" + `,
+		Filename:    {{.FileName | printf "%q"}},
 		DirModTime: time.Unix({{.ModTime}}, 0),
 		ChildFiles:  []*embedded.EmbeddedFile{
-			{{range .ChildFiles}}{{.Identifier}}, // {{.FileName}}
+			{{range .ChildFiles}}{{.Identifier}}, // {{.FileName | printf "%q"}}
 			{{end}}
 		},
 	}
@@ -43,7 +43,7 @@ func init() {
 
 	// link ChildDirs
 	{{range .Dirs}}{{.Identifier}}.ChildDirs = []*embedded.EmbeddedDir{
-		{{range .ChildDirs}}{{.Identifier}}, // {{.FileName}}
+		{{range .ChildDirs}}{{.Identifier}}, // {{.FileName | printf "%q"}}
 		{{end}}
 	}
 	{{end}}
@@ -53,11 +53,11 @@ func init() {
 		Name: ` + "`" + `{{.BoxName}}` + "`" + `,
 		Time: time.Unix({{.UnixNow}}, 0),
 		Dirs: map[string]*embedded.EmbeddedDir{
-			{{range .Dirs}}"{{.FileName}}": {{.Identifier}},
+			{{range .Dirs}}{{.FileName | printf "%q"}}: {{.Identifier}},
 			{{end}}
 		},
 		Files: map[string]*embedded.EmbeddedFile{
-			{{range .Files}}"{{.FileName}}": {{.Identifier}},
+			{{range .Files}}{{.FileName | printf "%q"}}: {{.Identifier}},
 			{{end}}
 		},
 	})
