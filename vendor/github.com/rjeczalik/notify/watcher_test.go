@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// NOTE Set DEBUG env var for extra debugging info.
+// NOTE Set NOTIFY_DEBUG env var or debug build tag for extra debugging info.
 
 func TestWatcher(t *testing.T) {
 	w := NewWatcherTest(t, "testdata/vfs.txt")
