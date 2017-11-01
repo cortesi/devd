@@ -41,11 +41,11 @@ filesystem changes are detected.
 Here's a quick example of a simple *modd.conf* file to illustrate.
 
 ```
-./src/** {
+src/** {
     prep: render ./src ./rendered
 }
 
-./rendered/*.css ./rendered/*.html {
+rendered/*.css ./rendered/*.html {
     daemon: devd -m ./rendered
 }
 ```
