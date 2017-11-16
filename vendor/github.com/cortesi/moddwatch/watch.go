@@ -6,25 +6,16 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cortesi/moddwatch/filter"
-	"github.com/cortesi/termlog"
 	"github.com/rjeczalik/notify"
 )
 
 // MaxLullWait is the maximum time to wait for a lull. This only kicks in if
 // we've had a constant stream of modifications blocking us.
 const MaxLullWait = time.Second * 8
-
-// Logger receives events as "debug", and is silenced by default
-var Logger = defaultLogger()
-
-func defaultLogger() termlog.Logger {
-	l := termlog.NewLog()
-	l.Quiet()
-	return l
-}
 
 // isUnder takes two absolute paths, and returns true if child is under parent.
 func isUnder(parent string, child string) bool {
@@ -37,38 +28,24 @@ func isUnder(parent string, child string) bool {
 	return false
 }
 
-// Notify events have absolute paths. We want to normalize these so that they
-// are relative to the base path. If the matching base is absolute, so is the
-// returned path.
-//
-// bases and abspath are in the OS-native separator format, the returned path
-// is slash-delimited.
-func normPath(bases []string, abspath string) (string, error) {
-	for _, base := range bases {
-		base = filter.BaseDir(base)
-		absbase, err := filepath.Abs(base)
-		if isUnder(absbase, abspath) {
-			if err != nil {
-				return "", err
-			}
-			relpath, err := filepath.Rel(absbase, abspath)
-			if err != nil {
-				return "", err
-			}
-			return filepath.ToSlash(filepath.Join(base, relpath)), nil
-		}
+func normPaths(root string, abspaths []string) ([]string, error) {
+	aroot, err := filepath.Abs(root)
+	if err != nil {
+		return nil, err
 	}
-	return filepath.ToSlash(abspath), nil
-}
-
-func normPaths(bases []string, abspaths []string) ([]string, error) {
 	ret := make([]string, len(abspaths))
 	for i, p := range abspaths {
-		norm, err := normPath(bases, p)
+		norm, err := filepath.Abs(p)
 		if err != nil {
 			return nil, err
 		}
-		ret[i] = norm
+		if isUnder(aroot, norm) {
+			norm, err = filepath.Rel(aroot, norm)
+			if err != nil {
+				return nil, err
+			}
+		}
+		ret[i] = filepath.ToSlash(norm)
 	}
 	return ret, nil
 }
@@ -133,8 +110,36 @@ func (mod Mod) Empty() bool {
 	return true
 }
 
+func joinLists(a []string, b []string) []string {
+	m := map[string]bool{}
+	for _, v := range a {
+		m[v] = true
+	}
+	for _, v := range b {
+		m[v] = true
+	}
+	ret := make([]string, len(m))
+	i := 0
+	for k := range m {
+		ret[i] = k
+		i++
+	}
+	sort.Strings(ret)
+	return ret
+}
+
+// Join two Mods together, resulting in a new structure where each modification
+// list is sorted alphabetically.
+func (mod Mod) Join(b Mod) Mod {
+	return Mod{
+		Changed: joinLists(mod.Changed, b.Changed),
+		Deleted: joinLists(mod.Deleted, b.Deleted),
+		Added:   joinLists(mod.Added, b.Added),
+	}
+}
+
 // Filter applies a filter, returning a new Mod structure
-func (mod *Mod) Filter(includes []string, excludes []string) (*Mod, error) {
+func (mod Mod) Filter(root string, includes []string, excludes []string) (*Mod, error) {
 	changed, err := filter.Files(mod.Changed, includes, excludes)
 	if err != nil {
 		return nil, err
@@ -150,16 +155,16 @@ func (mod *Mod) Filter(includes []string, excludes []string) (*Mod, error) {
 	return &Mod{Changed: changed, Deleted: deleted, Added: added}, nil
 }
 
-func (mod *Mod) normPaths(bases []string) (*Mod, error) {
-	changed, err := normPaths(bases, mod.Changed)
+func (mod *Mod) normPaths(root string) (*Mod, error) {
+	changed, err := normPaths(root, mod.Changed)
 	if err != nil {
 		return nil, err
 	}
-	deleted, err := normPaths(bases, mod.Deleted)
+	deleted, err := normPaths(root, mod.Deleted)
 	if err != nil {
 		return nil, err
 	}
-	added, err := normPaths(bases, mod.Added)
+	added, err := normPaths(root, mod.Added)
 	if err != nil {
 		return nil, err
 	}
@@ -182,8 +187,8 @@ func _keys(m map[string]bool) []string {
 
 type fset map[string]bool
 
-func mkmod(exists existenceChecker, added fset, removed fset, changed fset, renamed fset) *Mod {
-	ret := &Mod{}
+func mkmod(exists existenceChecker, added fset, removed fset, changed fset, renamed fset) Mod {
+	ret := Mod{}
 	for k := range renamed {
 		// If a file is moved from A to B, we'll get separate rename
 		// events for both A and B. The only way to know if it was the
@@ -251,8 +256,10 @@ func batch(lullTime time.Duration, maxTime time.Duration, exists existenceChecke
 	for {
 		select {
 		case evt := <-ch:
+			if evt == nil {
+				return nil
+			}
 			hadLullMod = true
-			Logger.SayAs("debug", "%s", evt)
 			switch evt.Event() {
 			case notify.Create:
 				added[evt.Path()] = true
@@ -266,55 +273,184 @@ func batch(lullTime time.Duration, maxTime time.Duration, exists existenceChecke
 		case <-time.After(lullTime):
 			// Have we had a lull?
 			if hadLullMod == false {
-				return mkmod(exists, added, removed, changed, renamed)
+				m := mkmod(exists, added, removed, changed, renamed)
+				return &m
 			}
 			hadLullMod = false
 		case <-time.After(maxTime):
-			return mkmod(exists, added, removed, changed, renamed)
+			m := mkmod(exists, added, removed, changed, renamed)
+			return &m
 		}
 	}
 }
 
 // Watcher is a handle that allows a Watch to be terminated
 type Watcher struct {
-	evtch chan notify.EventInfo
+	evtch  chan notify.EventInfo
+	modch  chan *Mod
+	closed bool
+
+	sync.Mutex
 }
 
-// Stop watching
+func (w *Watcher) send(m *Mod) {
+	w.Lock()
+	defer w.Unlock()
+	w.modch <- m
+}
+
+// Stop watching, and close the channel passed to watch. This function can
+// safely be called concurrently.
 func (w *Watcher) Stop() {
-	notify.Stop(w.evtch)
+	w.Lock()
+	defer w.Unlock()
+	if !w.closed {
+		notify.Stop(w.evtch)
+		close(w.modch)
+		w.closed = true
+	}
 }
 
-// Watch watches a set of paths. Mod structs representing a changeset are sent
-// on the channel ch.
+// Given a set of include patterns relative to a root, which directories do we
+// need to monitor for changes?
+func baseDirs(root string, includePatterns []string) []string {
+	root = filepath.FromSlash(root)
+	bases := make([]string, len(includePatterns))
+	for i, v := range includePatterns {
+		bdir, trailer := filter.SplitPattern(v)
+		if !filepath.IsAbs(bdir) {
+			bdir = filepath.Join(root, filepath.FromSlash(bdir))
+		}
+		if stat, err := os.Lstat(bdir); err != nil {
+			continue
+		} else {
+			// A symlink, so we rebase the include patterns and the base directory
+			if stat.Mode()&os.ModeSymlink != 0 {
+				lnk, err := os.Readlink(bdir)
+				if err != nil {
+					continue
+				}
+				if filepath.IsAbs(lnk) {
+					bdir = lnk
+				} else {
+					bdir = filepath.Join(bdir, lnk)
+				}
+				includePatterns[i] = bdir + "/" + trailer
+			}
+		}
+		bases[i] = bdir
+	}
+	return bases
+}
+
+// Watch watches a set of include and exclude patterns relative to a given root.
+// Mod structs representing discrete changesets are sent on the channel ch.
 //
 // Watch applies heuristics to cope with transient files and unreliable event
 // notifications. Modifications are batched up until there is a a lull in the
-// stream of changes of duration lullTime. This lets us represent processes
-// that progressively affect multiple files, like rendering, as a single
-// changeset.
+// stream of changes of duration lullTime. This lets us represent processes that
+// progressively affect multiple files, like rendering, as a single changeset.
 //
-// All paths emitted are slash-delimited.
-func Watch(paths []string, lullTime time.Duration, ch chan *Mod) (*Watcher, error) {
+// All paths emitted are slash-delimited and normalised. If a path lies under
+// the specified root, it is converted to a path relative to the root, otherwise
+// the returned path is absolute.
+//
+// Pattern syntax is as follows:
+//   *              any sequence of non-path-separators
+//   **             any sequence of characters, including path separators
+//   ?              any single non-path-separator character
+//   [class]        any single non-path-separator character against a class
+//                  of characters (see below)
+//   {alt1,...}     a sequence of characters if one of the comma-separated
+//                  alternatives matches
+//
+//  Any character with a special meaning can be escaped with a backslash (\).
+//
+// Character classes support the following:
+// 		[abc]		any single character within the set
+// 		[a-z]		any single character in the range
+// 		[^class] 	any single character which does not match the class
+func Watch(
+	root string,
+	includes []string,
+	excludes []string,
+	lullTime time.Duration,
+	ch chan *Mod,
+) (*Watcher, error) {
 	evtch := make(chan notify.EventInfo, 4096)
+	paths := baseDirs(root, includes)
 	for _, p := range paths {
-		err := notify.Watch(p, evtch, notify.All)
+		err := notify.Watch(filepath.Join(p, "..."), evtch, notify.All)
 		if err != nil {
 			notify.Stop(evtch)
 			return nil, err
 		}
 	}
+	w := &Watcher{evtch: evtch, modch: ch}
 	go func() {
 		for {
 			b := batch(lullTime, MaxLullWait, statExistenceChecker{}, evtch)
-			if b != nil && !b.Empty() {
-				ret, err := b.normPaths(paths)
+			if b == nil {
+				return
+			} else if !b.Empty() {
+				b, err := b.normPaths(root)
 				if err != nil {
-					Logger.Shout("Error normalising paths: %s", err)
+					// FIXME: Do something more decisive
+					continue
 				}
-				ch <- ret
+				b, err = b.Filter(root, includes, excludes)
+				if err != nil {
+					// FIXME: Do something more decisive
+					continue
+				}
+				if !b.Empty() {
+					w.send(b)
+				}
 			}
 		}
 	}()
-	return &Watcher{evtch}, nil
+	return w, nil
+}
+
+// List all files under the root that match the specified patterns. The file
+// list returned is a catalogue of all files currently on disk that could occur
+// in a Mod structure for a corresponding watch.
+//
+// All paths returned are slash-delimited and normalised. If a path lies under
+// the specified root, it is converted to a path relative to the root, otherwise
+// the returned path is absolute.
+//
+// The pattern syntax is the same as Watch.
+func List(root string, includePatterns []string, excludePatterns []string) ([]string, error) {
+	root = filepath.FromSlash(root)
+	bases := baseDirs(root, includePatterns)
+	ret := []string{}
+	for _, b := range bases {
+		err := filepath.Walk(
+			b,
+			func(p string, fi os.FileInfo, err error) error {
+				if err != nil || fi.Mode()&os.ModeSymlink != 0 {
+					return nil
+				}
+				cleanpath, err := filter.File(p, includePatterns, excludePatterns)
+				if err != nil {
+					return nil
+				}
+				if fi.IsDir() {
+					m, err := filter.MatchAny(p, excludePatterns)
+					// We skip the dir only if it's explicitly excluded
+					if err != nil && !m {
+						return filepath.SkipDir
+					}
+				} else if cleanpath != "" {
+					ret = append(ret, cleanpath)
+				}
+				return nil
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return normPaths(root, ret)
 }

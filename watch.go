@@ -1,6 +1,7 @@
 package devd
 
 import (
+	"os"
 	"time"
 
 	"github.com/cortesi/devd/livereload"
@@ -12,22 +13,28 @@ const batchTime = time.Millisecond * 200
 
 // Watch watches an endpoint for changes, if it supports them.
 func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Logger) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
 	switch r.Endpoint.(type) {
 	case *filesystemEndpoint:
 		ep := *r.Endpoint.(*filesystemEndpoint)
 		modchan := make(chan *moddwatch.Mod, 1)
-		_, err := moddwatch.Watch([]string{ep.Root + "/..."}, batchTime, modchan)
+		_, err := moddwatch.Watch(
+			wd,
+			[]string{ep.Root + "/..."},
+			excludePatterns,
+			batchTime,
+			modchan,
+		)
 		if err != nil {
 			return err
 		}
 		go func() {
 			for mod := range modchan {
-				filteredMod, err := mod.Filter([]string{"**/*"}, excludePatterns)
-				if err != nil {
-					log.Shout("Error filtering watches: %s", err)
-				}
-				if !filteredMod.Empty() {
-					ch <- filteredMod.All()
+				if !mod.Empty() {
+					ch <- mod.All()
 				}
 			}
 		}()
@@ -37,21 +44,27 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 
 // WatchPaths watches a set of paths, and broadcasts changes through reloader.
 func WatchPaths(paths, excludePatterns []string, reloader livereload.Reloader, log termlog.Logger) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
 	ch := make(chan []string, 1)
 	for _, path := range paths {
 		modchan := make(chan *moddwatch.Mod, 1)
-		_, err := moddwatch.Watch([]string{path}, batchTime, modchan)
+		_, err := moddwatch.Watch(
+			wd,
+			[]string{path},
+			excludePatterns,
+			batchTime,
+			modchan,
+		)
 		if err != nil {
 			return err
 		}
 		go func() {
 			for mod := range modchan {
-				filteredMod, err := mod.Filter([]string{"**/*"}, excludePatterns)
-				if err != nil {
-					log.Shout("Error filtering watches: %s", err)
-				}
-				if !filteredMod.Empty() {
-					ch <- filteredMod.All()
+				if !mod.Empty() {
+					ch <- mod.All()
 				}
 			}
 		}()

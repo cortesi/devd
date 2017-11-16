@@ -39,7 +39,7 @@
 
 [[constraint]]
   name = "github.com/fatih/color"
-  version = "1.5.0"
+  branch = "master"
 
 [[constraint]]
   branch = "master"
@@ -66,5 +66,5 @@
   name = "golang.org/x/net"
 
 [[constraint]]
-  name = "gopkg.in/alecthomas/kingpin.v2"
-  version = "2.2.5"
+  branch = "master"
+  name = "github.com/alecthomas/kingpin"
