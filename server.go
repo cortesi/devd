@@ -139,6 +139,7 @@ type Devd struct {
 	Latency  int
 	DownKbps uint
 	UpKbps   uint
+	ServingScheme string
 
 	// Add headers
 	AddHeaders *http.Header
@@ -163,6 +164,7 @@ type Devd struct {
 // logging, latency, and so forth.
 func (dd *Devd) WrapHandler(log termlog.TermLog, next httpctx.Handler) http.Handler {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Scheme = dd.ServingScheme
 		revertOriginalHost(r)
 		timr := timer.Timer{}
 		sublog := log.Group()
@@ -177,7 +179,7 @@ func (dd *Devd) WrapHandler(log termlog.TermLog, next httpctx.Handler) http.Hand
 		timr.RequestHeaders()
 		time.Sleep(time.Millisecond * time.Duration(dd.Latency))
 
-		dpath := r.URL.String()
+		dpath := r.RequestURI
 		if !strings.HasPrefix(dpath, "/") {
 			dpath = "/" + dpath
 		}
