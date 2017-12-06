@@ -296,7 +296,9 @@ type Watcher struct {
 func (w *Watcher) send(m *Mod) {
 	w.Lock()
 	defer w.Unlock()
-	w.modch <- m
+	if !w.closed {
+		w.modch <- m
+	}
 }
 
 // Stop watching, and close the channel passed to watch. This function can
@@ -311,21 +313,37 @@ func (w *Watcher) Stop() {
 	}
 }
 
+// Find the nearest enclosing directory
+func enclosingDir(path string) string {
+	for {
+		if stat, err := os.Lstat(path); err == nil {
+			if stat.IsDir() {
+				return path
+			}
+		}
+		if path == "" {
+			return ""
+		}
+		path = filepath.Dir(path)
+	}
+}
+
 // Given a set of include patterns relative to a root, which directories do we
-// need to monitor for changes?
-func baseDirs(root string, includePatterns []string) []string {
+// need to monitor for changes? Returns a modified set of includes ready to pass
+// to a post filter, and a set of base directories
+func baseDirs(root string, includePatterns []string) ([]string, []string) {
 	root = filepath.FromSlash(root)
 	bases := make([]string, len(includePatterns))
+	newincludes := includePatterns[:]
 	for i, v := range includePatterns {
 		bdir, trailer := filter.SplitPattern(v)
 		if !filepath.IsAbs(bdir) {
 			bdir = filepath.Join(root, filepath.FromSlash(bdir))
 		}
-		if stat, err := os.Lstat(bdir); err != nil {
-			continue
-		} else {
-			// A symlink, so we rebase the include patterns and the base directory
+		if stat, err := os.Lstat(bdir); err == nil {
 			if stat.Mode()&os.ModeSymlink != 0 {
+				// Case 1: The file exists and is a symlink, so we rebase the
+				// include patterns and the base directory
 				lnk, err := os.Readlink(bdir)
 				if err != nil {
 					continue
@@ -335,12 +353,24 @@ func baseDirs(root string, includePatterns []string) []string {
 				} else {
 					bdir = filepath.Join(bdir, lnk)
 				}
-				includePatterns[i] = bdir + "/" + trailer
+				newincludes[i] = bdir + "/" + trailer
+			} else {
+				// Case 2: The file exists and is nota symlink, so we leave bdir
+				// unmodified.
+				bdir = enclosingDir(bdir)
+				if bdir == "" {
+					bdir = root
+				}
+			}
+		} else {
+			bdir = enclosingDir(bdir)
+			if bdir == "" {
+				bdir = root
 			}
 		}
 		bases[i] = bdir
 	}
-	return bases
+	return newincludes, bases
 }
 
 // Watch watches a set of include and exclude patterns relative to a given root.
@@ -378,12 +408,12 @@ func Watch(
 	ch chan *Mod,
 ) (*Watcher, error) {
 	evtch := make(chan notify.EventInfo, 4096)
-	paths := baseDirs(root, includes)
+	newincludes, paths := baseDirs(root, includes)
 	for _, p := range paths {
 		err := notify.Watch(filepath.Join(p, "..."), evtch, notify.All)
 		if err != nil {
 			notify.Stop(evtch)
-			return nil, err
+			return nil, fmt.Errorf("could not watch path '%s': %s", p, err)
 		}
 	}
 	w := &Watcher{evtch: evtch, modch: ch}
@@ -398,7 +428,7 @@ func Watch(
 					// FIXME: Do something more decisive
 					continue
 				}
-				b, err = b.Filter(root, includes, excludes)
+				b, err = b.Filter(root, newincludes, excludes)
 				if err != nil {
 					// FIXME: Do something more decisive
 					continue
@@ -423,7 +453,7 @@ func Watch(
 // The pattern syntax is the same as Watch.
 func List(root string, includePatterns []string, excludePatterns []string) ([]string, error) {
 	root = filepath.FromSlash(root)
-	bases := baseDirs(root, includePatterns)
+	newincludes, bases := baseDirs(root, includePatterns)
 	ret := []string{}
 	for _, b := range bases {
 		err := filepath.Walk(
@@ -432,7 +462,7 @@ func List(root string, includePatterns []string, excludePatterns []string) ([]st
 				if err != nil || fi.Mode()&os.ModeSymlink != 0 {
 					return nil
 				}
-				cleanpath, err := filter.File(p, includePatterns, excludePatterns)
+				cleanpath, err := filter.File(p, newincludes, excludePatterns)
 				if err != nil {
 					return nil
 				}

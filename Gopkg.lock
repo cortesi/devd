@@ -29,7 +29,7 @@
   branch = "master"
   name = "github.com/cortesi/moddwatch"
   packages = [".","filter"]
-  revision = "228c18fd534b875242534ee3179a70d0ff69a0b1"
+  revision = "7c91438d2aa765c66fa38f05fc0c57eec9112156"
 
 [[projects]]
   branch = "master"
@@ -106,26 +106,26 @@
 [[projects]]
   name = "github.com/toqueteos/webbrowser"
   packages = ["."]
-  revision = "21fc9f95c83442fd164094666f7cb4f9fdd56cd6"
-  version = "v1.0"
+  revision = "3232c91b8ede8ca86e8962981d881af78875542f"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "9f005a07e0d31d45e6656d241bb5c0f2efd4bc94"
+  revision = "94eea52f7b742c7cbe0b03b22f0c4c8631ece122"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
-  revision = "9dfe39835686865bff950a07b394c12a98ddc811"
+  revision = "a8b9294777976932365dabb6640cf1468d95c70f"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "328643532ee3c60c099171d4ce2cad0ca0354ca9"
+  revision = "8b4580aae2a0dd0c231a45d3ccb8434ff533b840"
 
 [[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"
