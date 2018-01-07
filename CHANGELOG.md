@@ -1,3 +1,13 @@
+# v0.8: 8 January 2018
+
+* Improvements in file change monitoring, fixing a number of bugs and
+  reliability issues, and improving the way we handle symlinks (via the
+  moddwatch repo).
+* Fix handling of the X-Forwarded-Proto header in reverse proxy (thanks to Bernd
+  Haug <bernd.haug@xaidat.com>).
+* Various other minor fixes and documentation updates.
+
+
 # v0.7: 8 December 2016
 
 * Add the --notfound flag, which specifies over-rides when the static file sever can't find a file. This is useful for single-page JS app development.
