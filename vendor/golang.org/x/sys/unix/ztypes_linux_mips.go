@@ -786,3 +786,10 @@ const (
 	CTRL_ATTR_MCAST_GRP_NAME   = 0x1
 	CTRL_ATTR_MCAST_GRP_ID     = 0x2
 )
+
+type cpuMask uint32
+
+const (
+	_CPU_SETSIZE = 0x400
+	_NCPUBITS    = 0x20
+)

@@ -101,7 +101,7 @@
   branch = "master"
   name = "github.com/rjeczalik/notify"
   packages = ["."]
-  revision = "767eb674ef14b09119b2fff3601e64558d530c47"
+  revision = "27b537f07230b3f917421af6dcf044038dbe57e2"
 
 [[projects]]
   name = "github.com/toqueteos/webbrowser"
@@ -113,25 +113,25 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "94eea52f7b742c7cbe0b03b22f0c4c8631ece122"
+  revision = "0fcca4842a8d74bfddc2c96a073bd2a4d2a7a2e8"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
-  revision = "a8b9294777976932365dabb6640cf1468d95c70f"
+  revision = "42fe2e1c20de1054d3d30f82cc9fb5b41e2e3767"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "8b4580aae2a0dd0c231a45d3ccb8434ff533b840"
+  revision = "dd9ec17814d5b1de388ebe438ec013d57d8b3779"
 
 [[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"
   packages = ["."]
-  revision = "1087e65c9441605df944fb12c33f0fe7072d18ca"
-  version = "v2.2.5"
+  revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
+  version = "v2.2.6"
 
 [solve-meta]
   analyzer-name = "dep"

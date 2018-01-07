@@ -24,6 +24,7 @@ package unix
 #include <netinet/tcp.h>
 #include <netpacket/packet.h>
 #include <poll.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdio.h>
 #include <sys/epoll.h>
@@ -593,4 +594,13 @@ const (
 	CTRL_ATTR_MCAST_GRP_UNSPEC = C.CTRL_ATTR_MCAST_GRP_UNSPEC
 	CTRL_ATTR_MCAST_GRP_NAME   = C.CTRL_ATTR_MCAST_GRP_NAME
 	CTRL_ATTR_MCAST_GRP_ID     = C.CTRL_ATTR_MCAST_GRP_ID
+)
+
+// CPU affinity
+
+type cpuMask C.__cpu_mask
+
+const (
+	_CPU_SETSIZE = C.__CPU_SETSIZE
+	_NCPUBITS    = C.__NCPUBITS
 )
