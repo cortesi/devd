@@ -4,9 +4,12 @@
 
 # doublestar
 
-**doublestar** is a [golang](http://golang.org/) implementation of path pattern matching and globbing with support for "doublestar" (aka globstar: `**`) patterns.
+**doublestar** is a [golang](http://golang.org/) implementation of path pattern
+matching and globbing with support for "doublestar" (aka globstar: `**`)
+patterns.
 
-doublestar patterns match files and directories recursively. For example, if you had the following directory structure:
+doublestar patterns match files and directories recursively. For example, if
+you had the following directory structure:
 
 ```
 grandparent
@@ -15,7 +18,16 @@ grandparent
     `-- child2
 ```
 
-You could find the children with patterns such as: `**/child*`, `grandparent/**/child?`, `**/parent/*`, or even just `**` by itself (which will return all files and directories recursively).
+You could find the children with patterns such as: `**/child*`,
+`grandparent/**/child?`, `**/parent/*`, or even just `**` by itself (which will
+return all files and directories recursively).
+
+Bash's globstar is doublestar's inspiration and, as such, works similarly.
+Note that the doublestar must appear as a path component by itself. A pattern
+such as `/path**` is invalid and will be treated the same as `/path*`, but
+`/path*/**` should achieve the desired result. Additionally, `/path/**` will
+match all directories and files under the path directory, but `/path/**/` will
+only match directories.
 
 ## Installation
 
@@ -38,9 +50,14 @@ import "github.com/bmatcuk/doublestar"
 func Match(pattern, name string) (bool, error)
 ```
 
-Match returns true if `name` matches the file name `pattern` ([see below](#patterns)). `name` and `pattern` are split on forward slash (`/`) characters and may be relative or absolute.
+Match returns true if `name` matches the file name `pattern`
+([see below](#patterns)). `name` and `pattern` are split on forward slash (`/`)
+characters and may be relative or absolute.
 
-Note: `Match()` is meant to be a drop-in replacement for `path.Match()`. As such, it always uses `/` as the path separator. If you are writing code that will run on systems where `/` is not the path separator (such as Windows), you want to use `PathMatch()` (below) instead.
+Note: `Match()` is meant to be a drop-in replacement for `path.Match()`. As
+such, it always uses `/` as the path separator. If you are writing code that
+will run on systems where `/` is not the path separator (such as Windows), you
+want to use `PathMatch()` (below) instead.
 
 
 ### PathMatch
@@ -48,7 +65,10 @@ Note: `Match()` is meant to be a drop-in replacement for `path.Match()`. As such
 func PathMatch(pattern, name string) (bool, error)
 ```
 
-PathMatch returns true  if `name` matches the file name `pattern` ([see below](#patterns)). The difference between Match and PathMatch is that PathMatch will automatically use your system's path separator to split `name` and `pattern`.
+PathMatch returns true  if `name` matches the file name `pattern`
+([see below](#patterns)). The difference between Match and PathMatch is that
+PathMatch will automatically use your system's path separator to split `name`
+and `pattern`.
 
 `PathMatch()` is meant to be a drop-in replacement for `filepath.Match()`.
 
@@ -57,7 +77,9 @@ PathMatch returns true  if `name` matches the file name `pattern` ([see below](#
 func Glob(pattern string) ([]string, error)
 ```
 
-Glob finds all files and directories in the filesystem that match `pattern` ([see below](#patterns)). `pattern` may be relative (to the current working directory), or absolute.
+Glob finds all files and directories in the filesystem that match `pattern`
+([see below](#patterns)). `pattern` may be relative (to the current working
+directory), or absolute.
 
 `Glob()` is meant to be a drop-in replacement for `filepath.Glob()`.
 

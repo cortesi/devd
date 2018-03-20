@@ -4,13 +4,19 @@
 [[projects]]
   branch = "master"
   name = "github.com/GeertJohan/go.rice"
-  packages = [".","embedded"]
+  packages = [
+    ".",
+    "embedded"
+  ]
   revision = "c02ca9a983da5807ddf7d796784928f5be4afd09"
 
 [[projects]]
   branch = "master"
   name = "github.com/alecthomas/template"
-  packages = [".","parse"]
+  packages = [
+    ".",
+    "parse"
+  ]
   revision = "a0175ee3bccc567396460bf5acd36800cb10c49c"
 
 [[projects]]
@@ -23,12 +29,15 @@
   branch = "master"
   name = "github.com/bmatcuk/doublestar"
   packages = ["."]
-  revision = "dd6a6f0a8cdfaaa88b08cf26cf1bc7d69003ee13"
+  revision = "54c073d0225fcec2f0865dc8530ff0477fd91615"
 
 [[projects]]
   branch = "master"
   name = "github.com/cortesi/moddwatch"
-  packages = [".","filter"]
+  packages = [
+    ".",
+    "filter"
+  ]
   revision = "7c91438d2aa765c66fa38f05fc0c57eec9112156"
 
 [[projects]]
@@ -50,10 +59,10 @@
   revision = "bb3d318650d48840a39aa21a027c6630e198e626"
 
 [[projects]]
-  branch = "master"
   name = "github.com/fatih/color"
   packages = ["."]
-  revision = "5df930a27be2502f99b292b7cc09ebad4d0891f4"
+  revision = "507f6050b8568533fb3f5504de8e5205fa62a114"
+  version = "v1.6.0"
 
 [[projects]]
   branch = "master"
@@ -68,10 +77,10 @@
   version = "v1.2.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/juju/ratelimit"
   packages = ["."]
   revision = "59fac5042749a5afb9af70e813da1dd5474f0167"
+  version = "1.0.1"
 
 [[projects]]
   branch = "master"
@@ -101,7 +110,7 @@
   branch = "master"
   name = "github.com/rjeczalik/notify"
   packages = ["."]
-  revision = "27b537f07230b3f917421af6dcf044038dbe57e2"
+  revision = "d152f3ce359a5464dc41e84a8919fc67e55bbbf0"
 
 [[projects]]
   name = "github.com/toqueteos/webbrowser"
@@ -113,19 +122,22 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "0fcca4842a8d74bfddc2c96a073bd2a4d2a7a2e8"
+  revision = "c3a3ad6d03f7a915c0f7e194b7152974bb73d287"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
-  revision = "42fe2e1c20de1054d3d30f82cc9fb5b41e2e3767"
+  revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix","windows"]
-  revision = "dd9ec17814d5b1de388ebe438ec013d57d8b3779"
+  packages = [
+    "unix",
+    "windows"
+  ]
+  revision = "7ceb54c8418b8f9cdf0177b511d5cbb06e9fae39"
 
 [[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"
