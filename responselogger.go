@@ -15,6 +15,7 @@ import (
 type ResponseLogWriter struct {
 	Log         termlog.Logger
 	Resp        http.ResponseWriter
+	Flusher     http.Flusher
 	Timer       *timer.Timer
 	wroteHeader bool
 }
@@ -79,4 +80,10 @@ func (rl *ResponseLogWriter) WriteHeader(code int) {
 	rl.Timer.ResponseHeaders()
 	rl.Resp.WriteHeader(code)
 	rl.Timer.ResponseDone()
+}
+
+func (rl *ResponseLogWriter) Flush() {
+	if rl.Flusher != nil {
+		rl.Flusher.Flush()
+	}
 }

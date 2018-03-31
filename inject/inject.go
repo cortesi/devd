@@ -15,35 +15,63 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"strings"
 )
 
 // CopyInject copies data, and injects a payload before a specified marker
 type CopyInject struct {
 	// Number of initial bytes within which to search for marker
 	Within int
+	// Only inject in responses with this content type
+	ContentType string
 	// A marker, BEFORE which the payload is inserted
 	Marker *regexp.Regexp
 	// The payload to be inserted
 	Payload []byte
 }
 
-// Injector keeps injection state
-type Injector struct {
-	// Has the marker been found?
-	Found bool
+type Injector interface {
+	Copy(dst io.Writer) (int64, error)
+	Extra() int
+	Found() bool
+}
 
+// realInjector keeps injection state
+type realInjector struct {
+	// Has the marker been found?
+	found       bool
 	conf        *CopyInject
 	src         io.Reader
 	offset      int
 	sniffedData []byte
 }
 
+type nopInjector struct {
+	src io.Reader
+}
+
+func (injector *nopInjector) Copy(dst io.Writer) (int64, error) {
+	return io.Copy(dst, injector.src)
+}
+
+func (injector *nopInjector) Extra() int {
+	return 0
+}
+
+func (injector *nopInjector) Found() bool {
+	return false
+}
+
 // Extra reports the number of extra bytes that will be injected
-func (injector *Injector) Extra() int {
-	if injector.Found {
+func (injector *realInjector) Extra() int {
+	if injector.found {
 		return len(injector.conf.Payload)
 	}
 	return 0
+}
+
+func (injector *realInjector) Found() bool {
+	return injector.found
 }
 
 func min(a int, b int) int {
@@ -55,8 +83,12 @@ func min(a int, b int) int {
 
 // Sniff reads the first SniffLen bytes of the source, and checks for the
 // marker. Returns an Injector instance.
-func (ci *CopyInject) Sniff(src io.Reader) (*Injector, error) {
-	injector := &Injector{
+func (ci *CopyInject) Sniff(src io.Reader, contentType string) (Injector, error) {
+	if !strings.Contains(contentType, ci.ContentType) {
+		return &nopInjector{src: src}, nil
+	}
+
+	injector := &realInjector{
 		conf: ci,
 		src:  src,
 	}
@@ -74,7 +106,7 @@ func (ci *CopyInject) Sniff(src io.Reader) (*Injector, error) {
 	}
 	loc := ci.Marker.FindIndex(injector.sniffedData[:min(n, ci.Within)])
 	if loc != nil {
-		injector.Found = true
+		injector.found = true
 		injector.offset = loc[0]
 	}
 	return injector, nil
@@ -89,7 +121,7 @@ func (ci *CopyInject) ServeTemplate(statuscode int, w http.ResponseWriter, t *te
 	}
 
 	length := buff.Len()
-	inj, err := ci.Sniff(buff)
+	inj, err := ci.Sniff(buff, "text/html")
 	if err != nil {
 		return err
 	}
@@ -106,9 +138,9 @@ func (ci *CopyInject) ServeTemplate(statuscode int, w http.ResponseWriter, t *te
 
 // Copy copies the data from src to dst, injecting the Payload if Sniff found
 // the marker.
-func (injector *Injector) Copy(dst io.Writer) (int64, error) {
+func (injector *realInjector) Copy(dst io.Writer) (int64, error) {
 	var preludeLen int64
-	if injector.Found {
+	if injector.found {
 		startn, err := io.Copy(
 			dst,
 			bytes.NewBuffer(
