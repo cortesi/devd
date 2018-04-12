@@ -71,7 +71,6 @@ func singleJoiningSlash(a, b string) string {
 func NewSingleHostReverseProxy(target *url.URL, ci inject.CopyInject) *ReverseProxy {
 	targetQuery := target.RawQuery
 	director := func(req *http.Request) {
-		req.URL.Scheme = target.Scheme
 		req.URL.Host = target.Host
 		req.URL.Path = singleJoiningSlash(target.Path, req.URL.Path)
 		if req.Header.Get("X-Forwarded-Host") == "" {
@@ -80,6 +79,7 @@ func NewSingleHostReverseProxy(target *url.URL, ci inject.CopyInject) *ReversePr
 		if req.Header.Get("X-Forwarded-Proto") == "" {
 			req.Header.Set("X-Forwarded-Proto", req.URL.Scheme)
 		}
+		req.URL.Scheme = target.Scheme
 
 		// Set "identity"-only content encoding, in order for injector to
 		// work on text response

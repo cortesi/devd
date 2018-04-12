@@ -187,11 +187,19 @@ func main() {
 		hdrs.Set("Access-Control-Allow-Origin", "*")
 	}
 
+	var servingScheme string
+	if *tls {
+		servingScheme = "https"
+	} else {
+		servingScheme = "http"
+	}
+
 	dd := devd.Devd{
 		// Shaping
 		Latency:  *latency,
 		DownKbps: *downKbps,
 		UpKbps:   *upKbps,
+		ServingScheme: servingScheme,
 
 		AddHeaders: &hdrs,
 
