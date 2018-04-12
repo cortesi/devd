@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-func inject(ci CopyInject, data string) (found bool, dstdata string, err error) {
+func inject(ci CopyInject, data string, contentType string) (found bool, dstdata string, err error) {
 	src := bytes.NewBuffer([]byte(data))
 	dst := bytes.NewBuffer(make([]byte, 0))
-	injector, err := ci.Sniff(src)
+	injector, err := ci.Sniff(src, contentType)
 	if err != nil {
 		return false, "", err
 	}
@@ -18,7 +18,20 @@ func inject(ci CopyInject, data string) (found bool, dstdata string, err error) 
 	if err != nil {
 		return false, "", err
 	}
-	return injector.Found, string(dst.Bytes()), nil
+	return injector.Found(), string(dst.Bytes()), nil
+}
+
+func TestReverseProxyNoInject(t *testing.T) {
+	ci := CopyInject{
+		Within:      100,
+		ContentType: "text/html",
+		Marker:      regexp.MustCompile("mark"),
+		Payload:     []byte("inject"),
+	}
+	found, dst, err := inject(ci, "imark", "text/plain")
+	if err != nil || found || dst != "imark" {
+		t.Errorf("Unexpected, found:%v dst:%v error:%v", dst, found, err)
+	}
 }
 
 func TestReverseProxy(t *testing.T) {
@@ -43,11 +56,12 @@ func TestReverseProxy(t *testing.T) {
 	}
 	for i, tt := range sniffTests {
 		ci := CopyInject{
-			Within:  tt.snifflen,
-			Marker:  regexp.MustCompile(tt.marker),
-			Payload: []byte(tt.payload),
+			Within:      tt.snifflen,
+			ContentType: "text/html",
+			Marker:      regexp.MustCompile(tt.marker),
+			Payload:     []byte(tt.payload),
 		}
-		found, dst, err := inject(ci, tt.src)
+		found, dst, err := inject(ci, tt.src, "text/html")
 
 		// Sanity checkss
 		if err != nil {
@@ -74,7 +88,7 @@ func TestReverseProxy(t *testing.T) {
 		}
 
 		// Idempotence
-		found, dst2, err := inject(ci, dst)
+		found, dst2, err := inject(ci, dst, "text/html")
 		if err != nil {
 			t.Errorf("Test %d, unexpected error:\n%s\n", i, err)
 		}
@@ -91,8 +105,8 @@ func TestNil(t *testing.T) {
 	ci := CopyInject{}
 	val := "onetwothree"
 	src := bytes.NewBuffer([]byte(val))
-	injector, err := ci.Sniff(src)
-	if injector.Found || err != nil {
+	injector, err := ci.Sniff(src, "")
+	if injector.Found() || err != nil {
 		t.Error("Unexpected")
 	}
 	dst := bytes.NewBuffer(make([]byte, 0))

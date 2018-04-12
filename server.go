@@ -192,9 +192,10 @@ func (dd *Devd) WrapHandler(log termlog.TermLog, next httpctx.Handler) http.Hand
 				}
 			}
 		}
+		flusher, _ := w.(http.Flusher)
 		next.ServeHTTPContext(
 			ctx,
-			&ResponseLogWriter{Log: sublog, Resp: w, Timer: &timr},
+			&ResponseLogWriter{Log: sublog, Resp: w, Flusher: flusher, Timer: &timr},
 			r,
 		)
 	})
