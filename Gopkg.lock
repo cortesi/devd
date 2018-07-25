@@ -38,7 +38,7 @@
     ".",
     "filter"
   ]
-  revision = "7c91438d2aa765c66fa38f05fc0c57eec9112156"
+  revision = "56d4369103b070c9c37fea13cf2e915ef2af6d4a"
 
 [[projects]]
   branch = "master"
@@ -56,13 +56,13 @@
   branch = "master"
   name = "github.com/dustin/go-humanize"
   packages = ["."]
-  revision = "bb3d318650d48840a39aa21a027c6630e198e626"
+  revision = "9f541cc9db5d55bce703bd99987c9d5cb8eea45e"
 
 [[projects]]
+  branch = "master"
   name = "github.com/fatih/color"
   packages = ["."]
-  revision = "507f6050b8568533fb3f5504de8e5205fa62a114"
-  version = "v1.6.0"
+  revision = "2d684516a8861da43017284349b7e303e809ac21"
 
 [[projects]]
   branch = "master"
@@ -104,13 +104,13 @@
   branch = "master"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
-  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
+  revision = "3864e76763d94a6df2f9960b16a20a33da9f9a66"
 
 [[projects]]
-  branch = "master"
   name = "github.com/rjeczalik/notify"
   packages = ["."]
-  revision = "d152f3ce359a5464dc41e84a8919fc67e55bbbf0"
+  revision = "52ae50d8490436622a8941bd70c3dbe0acdd4bbf"
+  version = "v0.9.0"
 
 [[projects]]
   name = "github.com/toqueteos/webbrowser"
@@ -122,13 +122,13 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "c3a3ad6d03f7a915c0f7e194b7152974bb73d287"
+  revision = "c126467f60eb25f8f27e5a981f32a87e3965053f"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context"]
-  revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
+  revision = "3673e40ba22529d22c3fd7c93e97b0ce50fa7bdd"
 
 [[projects]]
   branch = "master"
@@ -137,7 +137,7 @@
     "unix",
     "windows"
   ]
-  revision = "7ceb54c8418b8f9cdf0177b511d5cbb06e9fae39"
+  revision = "e072cadbbdc8dd3d3ffa82b8b4b9304c261d9311"
 
 [[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"

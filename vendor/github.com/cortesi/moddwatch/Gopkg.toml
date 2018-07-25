@@ -72,14 +72,6 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/cortesi/modd"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/cortesi/termlog"
-
-[[constraint]]
-  branch = "master"
   name = "github.com/rjeczalik/notify"
 
 [[constraint]]

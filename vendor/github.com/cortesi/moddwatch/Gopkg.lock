@@ -5,25 +5,30 @@
   branch = "master"
   name = "github.com/bmatcuk/doublestar"
   packages = ["."]
-  revision = "dd6a6f0a8cdfaaa88b08cf26cf1bc7d69003ee13"
+  revision = "54c073d0225fcec2f0865dc8530ff0477fd91615"
 
 [[projects]]
   name = "github.com/google/go-cmp"
-  packages = ["cmp","cmp/internal/diff","cmp/internal/function","cmp/internal/value"]
+  packages = [
+    "cmp",
+    "cmp/internal/diff",
+    "cmp/internal/function",
+    "cmp/internal/value"
+  ]
   revision = "8099a9787ce5dc5984ed879a3bda47dc730a8e97"
   version = "v0.1.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/rjeczalik/notify"
   packages = ["."]
-  revision = "767eb674ef14b09119b2fff3601e64558d530c47"
+  revision = "52ae50d8490436622a8941bd70c3dbe0acdd4bbf"
+  version = "v0.9.0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "8b4580aae2a0dd0c231a45d3ccb8434ff533b840"
+  revision = "ac767d655b305d4e9612f5f6e33120b9176c4ad4"
 
 [solve-meta]
   analyzer-name = "dep"
