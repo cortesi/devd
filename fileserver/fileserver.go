@@ -126,7 +126,7 @@ func serveContent(ci inject.CopyInject, w http.ResponseWriter, r *http.Request, 
 		ctype = ctypes[0]
 	}
 
-	injector, err := ci.Sniff(content)
+	injector, err := ci.Sniff(content, ctype)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return err
@@ -138,7 +138,7 @@ func serveContent(ci inject.CopyInject, w http.ResponseWriter, r *http.Request, 
 		return err
 	}
 
-	if injector.Found {
+	if injector.Found() {
 		size = size + int64(injector.Extra())
 	}
 

@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/cortesi/devd/fileserver"
 	"github.com/cortesi/devd/httpctx"
@@ -31,6 +32,7 @@ func (ep forwardEndpoint) Handler(prefix string, templates *template.Template, c
 	rp.Transport = &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
+	rp.FlushInterval = 200 * time.Millisecond
 	return httpctx.StripPrefix(prefix, rp)
 }
 

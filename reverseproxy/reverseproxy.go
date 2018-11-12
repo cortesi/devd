@@ -71,7 +71,6 @@ func singleJoiningSlash(a, b string) string {
 func NewSingleHostReverseProxy(target *url.URL, ci inject.CopyInject) *ReverseProxy {
 	targetQuery := target.RawQuery
 	director := func(req *http.Request) {
-		req.URL.Scheme = target.Scheme
 		req.URL.Host = target.Host
 		req.URL.Path = singleJoiningSlash(target.Path, req.URL.Path)
 		if req.Header.Get("X-Forwarded-Host") == "" {
@@ -80,6 +79,7 @@ func NewSingleHostReverseProxy(target *url.URL, ci inject.CopyInject) *ReversePr
 		if req.Header.Get("X-Forwarded-Proto") == "" {
 			req.Header.Set("X-Forwarded-Proto", req.URL.Scheme)
 		}
+		req.URL.Scheme = target.Scheme
 
 		// Set "identity"-only content encoding, in order for injector to
 		// work on text response
@@ -173,14 +173,14 @@ func (p *ReverseProxy) ServeHTTPContext(
 		log.Say(fmt.Sprintf("%s uploaded", humanize.Bytes(uint64(req.ContentLength))))
 	}
 
-	inject, err := p.Inject.Sniff(res.Body)
+	inject, err := p.Inject.Sniff(res.Body, res.Header.Get("Content-Type"))
 	if err != nil {
 		log.Shout("reverse proxy error: %v", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if inject.Found {
+	if inject.Found() {
 		cl, err := strconv.ParseInt(res.Header.Get("Content-Length"), 10, 32)
 		if err == nil {
 			cl = cl + int64(inject.Extra())
@@ -196,7 +196,7 @@ func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.ServeHTTPContext(context.Background(), w, r)
 }
 
-func (p *ReverseProxy) copyResponse(ctx context.Context, dst io.Writer, inject *inject.Injector) {
+func (p *ReverseProxy) copyResponse(ctx context.Context, dst io.Writer, inject inject.Injector) {
 	log := termlog.FromContext(ctx)
 	if p.FlushInterval != 0 {
 		if wf, ok := dst.(writeFlusher); ok {
