@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GeertJohan/go.rice"
+	rice "github.com/GeertJohan/go.rice"
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/ricetemp"
 	"github.com/cortesi/devd/routespec"
@@ -408,7 +408,7 @@ func TestServeFileWithContentEncoding(t *testing.T) {
 
 func TestServeIndexHtml(t *testing.T) {
 	defer afterTest(t)
-	const want = "index.html says hello\n"
+	const want = "index.html says hello"
 
 	fs := &FileServer{
 		"version",
@@ -430,7 +430,7 @@ func TestServeIndexHtml(t *testing.T) {
 		if err != nil {
 			t.Fatal("reading Body:", err)
 		}
-		if s := string(b); s != want {
+		if s := strings.TrimSpace(string(b)); s != want {
 			t.Errorf("for path %q got %q, want %q", path, s, want)
 		}
 		_ = res.Body.Close()

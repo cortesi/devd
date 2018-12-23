@@ -18,7 +18,7 @@ import (
 
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/termlog"
-	"github.com/dustin/go-humanize"
+	humanize "github.com/dustin/go-humanize"
 )
 
 // onExitFlushLoop is a callback set by tests to detect the state of the
