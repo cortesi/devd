@@ -48,6 +48,7 @@ package unix
 #include <sys/wait.h>
 #include <linux/filter.h>
 #include <linux/icmpv6.h>
+#include <linux/if_pppox.h>
 #include <linux/keyctl.h>
 #include <linux/netfilter/nf_tables.h>
 #include <linux/netfilter/nfnetlink.h>
@@ -56,7 +57,28 @@ package unix
 #include <linux/perf_event.h>
 #include <linux/rtnetlink.h>
 #include <linux/stat.h>
+#if defined(__sparc__)
+// On sparc{,64}, the kernel defines struct termios2 itself which clashes with the
+// definition in glibc. Duplicate the kernel version here.
+#if defined(__arch64__)
+typedef unsigned int tcflag_t;
+#else
+typedef unsigned long tcflag_t;
+#endif
+
+struct termios2 {
+	tcflag_t c_iflag;
+	tcflag_t c_oflag;
+	tcflag_t c_cflag;
+	tcflag_t c_lflag;
+	unsigned char c_line;
+	unsigned char c_cc[19];
+	unsigned int c_ispeed;
+	unsigned int c_ospeed;
+};
+#else
 #include <asm/termbits.h>
+#endif
 #include <asm/ptrace.h>
 #include <time.h>
 #include <unistd.h>
@@ -168,6 +190,7 @@ union sockaddr_all {
 	struct sockaddr_un s4;
 	struct sockaddr_ll s5;
 	struct sockaddr_nl s6;
+	struct sockaddr_pppox s7;
 };
 
 struct sockaddr_any {
@@ -432,6 +455,8 @@ type RawSockaddrVM C.struct_sockaddr_vm
 
 type RawSockaddrXDP C.struct_sockaddr_xdp
 
+type RawSockaddrPPPoX [C.sizeof_struct_sockaddr_pppox]byte
+
 type RawSockaddr C.struct_sockaddr
 
 type RawSockaddrAny C.struct_sockaddr_any
@@ -480,6 +505,7 @@ const (
 	SizeofSockaddrALG       = C.sizeof_struct_sockaddr_alg
 	SizeofSockaddrVM        = C.sizeof_struct_sockaddr_vm
 	SizeofSockaddrXDP       = C.sizeof_struct_sockaddr_xdp
+	SizeofSockaddrPPPoX     = C.sizeof_struct_sockaddr_pppox
 	SizeofLinger            = C.sizeof_struct_linger
 	SizeofIovec             = C.sizeof_struct_iovec
 	SizeofIPMreq            = C.sizeof_struct_ip_mreq

@@ -274,9 +274,11 @@ func (b *Builder) flushChild() {
 		return
 	}
 
-	if !b.fixedSize {
-		b.result = child.result // In case child reallocated result.
+	if b.fixedSize && &b.result[0] != &child.result[0] {
+		panic("cryptobyte: BuilderContinuation reallocated a fixed-size buffer")
 	}
+
+	b.result = child.result
 }
 
 func (b *Builder) add(bytes ...byte) {
@@ -284,7 +286,7 @@ func (b *Builder) add(bytes ...byte) {
 		return
 	}
 	if b.child != nil {
-		panic("attempted write while child is pending")
+		panic("cryptobyte: attempted write while child is pending")
 	}
 	if len(b.result)+len(bytes) < len(bytes) {
 		b.err = errors.New("cryptobyte: length overflow")
@@ -304,7 +306,7 @@ func (b *Builder) Unwrite(n int) {
 		return
 	}
 	if b.child != nil {
-		panic("attempted unwrite while child is pending")
+		panic("cryptobyte: attempted unwrite while child is pending")
 	}
 	length := len(b.result) - b.pendingLenLen - b.offset
 	if length < 0 {

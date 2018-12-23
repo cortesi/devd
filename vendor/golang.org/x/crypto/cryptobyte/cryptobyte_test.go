@@ -412,6 +412,33 @@ func TestUnwrite(t *testing.T) {
 	})
 }
 
+func TestFixedBuilderLengthPrefixed(t *testing.T) {
+	bufCap := 10
+	inner := bytes.Repeat([]byte{0xff}, bufCap-2)
+	buf := make([]byte, 0, bufCap)
+	b := NewFixedBuilder(buf)
+	b.AddUint16LengthPrefixed(func(b *Builder) {
+		b.AddBytes(inner)
+	})
+	if got := b.BytesOrPanic(); len(got) != bufCap {
+		t.Errorf("Expected output length to be %d, got %d", bufCap, len(got))
+	}
+}
+
+func TestFixedBuilderPanicReallocate(t *testing.T) {
+	defer func() {
+		recover()
+	}()
+
+	b := NewFixedBuilder(make([]byte, 0, 10))
+	b1 := NewFixedBuilder(make([]byte, 0, 10))
+	b.AddUint16LengthPrefixed(func(b *Builder) {
+		*b = *b1
+	})
+
+	t.Error("Builder did not panic")
+}
+
 // ASN.1
 
 func TestASN1Int64(t *testing.T) {

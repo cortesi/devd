@@ -41,14 +41,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6f0e2500c5fc5f009895aa7ee66610ca1f74733df9d469e4c16e4351f055da4a"
+  digest = "1:a4ed0f60085a36f35212a54e6d337aef5b87a094d142485a4de88f6f844e164e"
   name = "github.com/cortesi/moddwatch"
   packages = [
     ".",
     "filter",
   ]
   pruneopts = ""
-  revision = "56d4369103b070c9c37fea13cf2e915ef2af6d4a"
+  revision = "5f01cc16f2a5c412d22c623c02662f09f7b73ae2"
 
 [[projects]]
   branch = "master"
@@ -140,11 +140,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b5dd054ec8f13579d3b6520b57edf8bfb2bfb6f6a674bf73f63fab822fb8db18"
+  digest = "1:b434ecf65028920da12e3c375ee17e67bdb9ba2d6e6d39ac11f54679155ac4a7"
   name = "github.com/rjeczalik/notify"
   packages = ["."]
   pruneopts = ""
-  revision = "352c463f90a00c0cf83b1148f11ada779308f411"
+  revision = "629144ba06a1c6af28c1e42c228e3d42594ce081"
 
 [[projects]]
   digest = "1:e1cd343b3883ced86b6873fe4d2f76799259fba3d1656df6ac0a7fa92644c049"
@@ -156,30 +156,30 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a242f23ceb22423c0a2111d9488a2ab19a2e817111a4f3e2385f5f89a53e619f"
+  digest = "1:887074c37fcefc2f49b5ae9c6f9f36107341aec23185613d0e9f1ee81db7f94a"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   pruneopts = ""
-  revision = "e4dc69e5b2fd71dcaf8bd5d054eb936deb78d1fa"
+  revision = "505ab145d0a99da450461ae2c1a9f6cd10d1f447"
 
 [[projects]]
   branch = "master"
-  digest = "1:3b86e1cf4059ba6c2cf189f60655a16a8e32d221ed23c4137ac6b2adeaeccc52"
+  digest = "1:4ab2fc83e3222b69759dfd717e01d0cf38b133aabfacc29a86057021a2f1abd9"
   name = "golang.org/x/net"
   packages = ["context"]
   pruneopts = ""
-  revision = "03003ca0c849e57b6ea29a4bab8d3cb6e4d568fe"
+  revision = "927f97764cc334a6575f4b7a1584a147864d5723"
 
 [[projects]]
   branch = "master"
-  digest = "1:3f5c191d90f1cf365ff1f88e4b08eb766ee6ade1cb2e4efd7c316cf7e015ac17"
+  digest = "1:e6d1805ead5b8f2439808f76187f54042ed35ee26eb9ca63127259a0e612b119"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = ""
-  revision = "66b7b1311ac80bbafcd2daeef9a5e6e2cd1e2399"
+  revision = "b4a75ba826a64a70990f11a225237acd6ef35c9f"
 
 [[projects]]
   digest = "1:15d017551627c8bb091bde628215b2861bed128855343fdd570c62d08871f6e1"
