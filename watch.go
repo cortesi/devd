@@ -12,16 +12,21 @@ import (
 const batchTime = time.Millisecond * 200
 
 // Watch watches an endpoint for changes, if it supports them.
-func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Logger) error {
+func (r Route) Watch(
+	ch chan []string,
+	excludePatterns []string,
+	log termlog.Logger,
+) (*moddwatch.Watcher, error) {
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		return nil, err
 	}
+	var watcher *moddwatch.Watcher
 	switch r.Endpoint.(type) {
 	case *filesystemEndpoint:
 		ep := *r.Endpoint.(*filesystemEndpoint)
 		modchan := make(chan *moddwatch.Mod, 1)
-		_, err := moddwatch.Watch(
+		watcher, err = moddwatch.Watch(
 			wd,
 			[]string{ep.Root + "/...", "**"},
 			excludePatterns,
@@ -29,7 +34,7 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 			modchan,
 		)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		go func() {
 			for mod := range modchan {
@@ -39,7 +44,7 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 			}
 		}()
 	}
-	return nil
+	return watcher, nil
 }
 
 // WatchPaths watches a set of paths, and broadcasts changes through reloader.
@@ -77,7 +82,7 @@ func WatchPaths(paths, excludePatterns []string, reloader livereload.Reloader, l
 func WatchRoutes(routes RouteCollection, reloader livereload.Reloader, excludePatterns []string, log termlog.Logger) error {
 	c := make(chan []string, 1)
 	for i := range routes {
-		err := routes[i].Watch(c, excludePatterns, log)
+		_, err := routes[i].Watch(c, excludePatterns, log)
 		if err != nil {
 			return err
 		}

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cortesi/moddwatch"
 	"github.com/cortesi/termlog"
 )
 
@@ -44,13 +45,12 @@ func TestRouteWatch(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpFolder)
 
-  // Ensure that using . for the path works:
-	os.Chdir(tmpFolder) 
+	// Ensure that using . for the path works:
+	os.Chdir(tmpFolder)
 	routes := make(RouteCollection)
 	routes.Add(".", nil)
 
 	changedFiles := make(map[string]int)
-
 	ch := make(chan []string, 1)
 	var wg sync.WaitGroup
 	go func() {
@@ -68,19 +68,25 @@ func TestRouteWatch(t *testing.T) {
 			}
 		}
 	}()
-	for i := range routes {
-		err := routes[i].Watch(ch, nil, logger)
+	watchers := make([]*moddwatch.Watcher, len(routes))
+	i := 0
+	for r := range routes {
+		watcher, err := routes[r].Watch(ch, nil, logger)
+		watchers[i] = watcher
 		if err != nil {
 			t.Error(err)
 		}
+		i++
 	}
-	//////////////////////////////////
-	t.Log("Temp folder:", tmpFolder)
 	addTempFile(&wg, t, tmpFolder, "a.txt", "foo\n")
 	addTempFile(&wg, t, tmpFolder, "c.txt", "bar\n")
 	addTempFile(&wg, t, tmpFolder, "another.file.txt", "bar\n")
-	//////////////////////////////////
-	waitTimeout(&wg, 700*time.Millisecond)
+	waitTimeout(&wg, 5*time.Second)
+
+	for _, v := range watchers {
+		v.Stop()
+	}
+
 	close(ch)
 	if len(changedFiles) != 3 {
 		t.Error("The watch should have been notified about 3 changed files")
