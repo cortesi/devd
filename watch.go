@@ -23,7 +23,7 @@ func (r Route) Watch(ch chan []string, excludePatterns []string, log termlog.Log
 		modchan := make(chan *moddwatch.Mod, 1)
 		_, err := moddwatch.Watch(
 			wd,
-			[]string{ep.Root + "/..."},
+			[]string{ep.Root + "/...", "**"},
 			excludePatterns,
 			batchTime,
 			modchan,
