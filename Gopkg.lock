@@ -41,14 +41,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a4ed0f60085a36f35212a54e6d337aef5b87a094d142485a4de88f6f844e164e"
+  digest = "1:b81cc72793c11720782736076b75f319b94cbd86cbfed7cd46fb27ecdbd98e06"
   name = "github.com/cortesi/moddwatch"
   packages = [
     ".",
     "filter",
   ]
   pruneopts = ""
-  revision = "5f01cc16f2a5c412d22c623c02662f09f7b73ae2"
+  revision = "0a1e0881aa8823d4dbec04c5b65a32a33f467e46"
 
 [[projects]]
   branch = "master"
@@ -147,12 +147,12 @@
   revision = "629144ba06a1c6af28c1e42c228e3d42594ce081"
 
 [[projects]]
-  digest = "1:e1cd343b3883ced86b6873fe4d2f76799259fba3d1656df6ac0a7fa92644c049"
+  branch = "master"
+  digest = "1:d089162cc267222030914842f3a89ac096eba7cd3a4d5812e25ae793ffbf0826"
   name = "github.com/toqueteos/webbrowser"
   packages = ["."]
   pruneopts = ""
-  revision = "3232c91b8ede8ca86e8962981d881af78875542f"
-  version = "v1.1.0"
+  revision = "43eedf9c266f511c55ef7eace9ee549e269b54b4"
 
 [[projects]]
   branch = "master"

@@ -59,7 +59,7 @@
 
 [[constraint]]
   name = "github.com/toqueteos/webbrowser"
-  version = "1.0.0"
+  branch = "master"
 
 [[constraint]]
   branch = "master"
