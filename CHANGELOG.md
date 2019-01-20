@@ -1,3 +1,11 @@
+# v0.9: 21 January 2019
+
+* Fix live reload issues on Linux (Delyan Angelov)
+* Only inject livereload content if content type is text/html (Mattias Wadman)
+* Fix treatment of X-Forwarded-Proto (Marvin Frick)
+* Dependency updates and test improvements
+
+
 # v0.8: 8 January 2018
 
 * Improvements in file change monitoring, fixing a number of bugs and
