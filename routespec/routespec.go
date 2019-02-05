@@ -23,11 +23,11 @@ func checkURL(s string) (isURL bool, err error) {
 	case parsed.Scheme == "http", parsed.Scheme == "https":
 		isURL = true
 	case parsed.Scheme == "ws":
-		err = fmt.Errorf("Websocket protocol not supported: %s", s)
+		err = fmt.Errorf("websocket protocol not supported: %s", s)
 	default:
 		// A route of "localhost:1234/abc" without the "http" or "https" triggers this case.
 		// Unfortunately a route of "localhost/abc" just looks like a file and is not caught here.
-		err = fmt.Errorf("Unknown scheme '%s': did you mean http or https?: %s", parsed.Scheme, s)
+		err = fmt.Errorf("unknown scheme '%s': did you mean http or https?: %s", parsed.Scheme, s)
 	}
 	return
 }

@@ -433,7 +433,7 @@ func (fserver *FileServer) serveNotFoundFile(
 	sizeFunc := func() (int64, error) { return d.Size(), nil }
 	err = serveContent(fserver.Inject, w, r, d.Name(), d.ModTime(), sizeFunc, f)
 	if err != nil {
-		return false, fmt.Errorf("Error serving file: %s", err)
+		return false, fmt.Errorf("error serving file: %s", err)
 	}
 	return false, nil
 }
