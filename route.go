@@ -39,7 +39,7 @@ func (ep forwardEndpoint) Handler(prefix string, templates *template.Template, c
 func newForwardEndpoint(path string) (*forwardEndpoint, error) {
 	url, err := url.Parse(path)
 	if err != nil {
-		return nil, fmt.Errorf("Could not parse route URL: %s", err)
+		return nil, fmt.Errorf("could not parse route URL: %s", err)
 	}
 	f := forwardEndpoint(*url)
 	return &f, nil
@@ -63,7 +63,7 @@ func newFilesystemEndpoint(path string, notfound []string) (*filesystemEndpoint,
 			return nil, err
 		}
 		if rp.IsURL {
-			return nil, fmt.Errorf("Not found over-ride target cannot be a URL.")
+			return nil, fmt.Errorf("not found over-ride target cannot be a URL")
 		}
 		rparts = append(rparts, *rp)
 	}

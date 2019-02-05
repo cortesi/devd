@@ -49,7 +49,7 @@ func pickPort(addr string, low int, high int, tls bool) (net.Listener, error) {
 			return hl, nil
 		}
 	}
-	return nil, fmt.Errorf("Could not find open port.")
+	return nil, fmt.Errorf("could not find open port")
 }
 
 func getTLSConfig(path string) (t *tls.Config, err error) {
@@ -126,7 +126,7 @@ type Credentials struct {
 func CredentialsFromSpec(spec string) (*Credentials, error) {
 	parts := strings.SplitN(spec, ":", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return nil, fmt.Errorf("Invalid credential spec: %s", spec)
+		return nil, fmt.Errorf("invalid credential spec: %s", spec)
 	}
 	return &Credentials{parts[0], parts[1]}, nil
 }
@@ -218,7 +218,7 @@ func (dd *Devd) AddRoutes(specs []string, notfound []string) error {
 	for _, s := range specs {
 		err := dd.Routes.Add(s, notfound)
 		if err != nil {
-			return fmt.Errorf("Invalid route specification: %s", err)
+			return fmt.Errorf("invalid route specification: %s", err)
 		}
 	}
 	return nil
@@ -289,13 +289,13 @@ func (dd *Devd) Router(logger termlog.TermLog, templates *template.Template) (ht
 		if dd.LivereloadRoutes {
 			err := WatchRoutes(dd.Routes, lr, dd.Excludes, logger)
 			if err != nil {
-				return nil, fmt.Errorf("Could not watch routes for livereload: %s", err)
+				return nil, fmt.Errorf("could not watch routes for livereload: %s", err)
 			}
 		}
 		if len(dd.WatchPaths) > 0 {
 			err := WatchPaths(dd.WatchPaths, dd.Excludes, lr, logger)
 			if err != nil {
-				return nil, fmt.Errorf("Could not watch path for livereload: %s", err)
+				return nil, fmt.Errorf("could not watch path for livereload: %s", err)
 			}
 		}
 		dd.lrserver = lr
@@ -320,7 +320,7 @@ func (dd *Devd) Router(logger termlog.TermLog, templates *template.Template) (ht
 func (dd *Devd) Serve(address string, port int, certFile string, logger termlog.TermLog, callback func(string)) error {
 	templates, err := ricetemp.MakeTemplates(rice.MustFindBox("templates"))
 	if err != nil {
-		return fmt.Errorf("Error loading templates: %s", err)
+		return fmt.Errorf("error loading templates: %s", err)
 	}
 	mux, err := dd.Router(logger, templates)
 	if err != nil {
@@ -331,7 +331,7 @@ func (dd *Devd) Serve(address string, port int, certFile string, logger termlog.
 	if certFile != "" {
 		tlsConfig, err = getTLSConfig(certFile)
 		if err != nil {
-			return fmt.Errorf("Could not load certs: %s", err)
+			return fmt.Errorf("could not load certs: %s", err)
 		}
 		tlsEnabled = true
 	}

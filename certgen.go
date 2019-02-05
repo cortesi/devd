@@ -50,12 +50,12 @@ func GenerateCert(dst string) error {
 		priv,
 	)
 	if err != nil {
-		return fmt.Errorf("Could not create cert: %s", err)
+		return fmt.Errorf("could not create cert: %s", err)
 	}
 
 	certOut, err := os.Create(dst)
 	if err != nil {
-		return fmt.Errorf("Could not open %s for writing: %s", dst, err)
+		return fmt.Errorf("could not open %s for writing: %s", dst, err)
 	}
 	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	if err != nil {
@@ -69,7 +69,7 @@ func GenerateCert(dst string) error {
 
 	keyOut, err := os.OpenFile(dst, os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
-		return fmt.Errorf("Could not open %s for writing: %s", dst, err)
+		return fmt.Errorf("could not open %s for writing: %s", dst, err)
 	}
 	err = pem.Encode(
 		keyOut,
