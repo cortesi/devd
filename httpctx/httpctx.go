@@ -47,3 +47,14 @@ func StripPrefix(prefix string, h Handler) Handler {
 		}
 	})
 }
+
+func RouteWebsockets(httpHandler, wsHandler Handler) Handler {
+	return HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		upgrade := r.Header.Get("Upgrade")
+		if upgrade == "websocket" {
+			wsHandler.ServeHTTPContext(ctx, w, r)
+		} else {
+			httpHandler.ServeHTTPContext(ctx, w, r)
+		}
+	})
+}

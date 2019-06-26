@@ -2,6 +2,7 @@
 package websocketproxy
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -67,6 +68,11 @@ func NewProxy(target *url.URL) *WebsocketProxy {
 
 // ServeHTTP implements the http.Handler that proxies WebSocket connections.
 func (w *WebsocketProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	w.ServeHTTPContext(context.Background(), rw, req)
+}
+
+// ServeHTTP implements the http.Handler that proxies WebSocket connections.
+func (w *WebsocketProxy) ServeHTTPContext(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
 	if w.Backend == nil {
 		log.Println("websocketproxy: backend function is not defined")
 		http.Error(rw, "internal server error (code: 1)", http.StatusInternalServerError)
@@ -135,9 +141,9 @@ func (w *WebsocketProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// opening a new TCP connection time for each request. This should be
 	// optional:
 	// http://tools.ietf.org/html/draft-ietf-hybi-websocket-multiplexing-01
-	connBackend, resp, err := dialer.Dial(backendURL.String(), requestHeader)
+	connBackend, resp, err := dialer.DialContext(ctx, backendURL.String(), requestHeader)
 	if err != nil {
-		log.Printf("websocketproxy: couldn't dial to remote backend url %s", err)
+		log.Printf("websocketproxy: couldn't dial to remote backend url %s, %s", backendURL.String(), err)
 		if resp != nil {
 			// If the WebSocket handshake fails, ErrBadHandshake is returned
 			// along with a non-nil *http.Response so that callers can handle
