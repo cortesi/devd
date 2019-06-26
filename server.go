@@ -151,6 +151,9 @@ type Devd struct {
 	WatchPaths []string
 	Excludes   []string
 
+	// Add Access-Control-Allow-Origin header
+	Cors bool
+
 	// Logging
 	IgnoreLogs []*regexp.Regexp
 
@@ -192,6 +195,17 @@ func (dd *Devd) WrapHandler(log termlog.TermLog, next httpctx.Handler) http.Hand
 				for _, v := range vals {
 					w.Header().Set(h, v)
 				}
+			}
+		}
+		if dd.Cors {
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				origin = "*"
+			}
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			requestHeaders := r.Header.Get("Access-Control-Request-Headers")
+			if requestHeaders != "" {
+				w.Header().Set("Access-Control-Allow-Headers", requestHeaders)
 			}
 		}
 		flusher, _ := w.(http.Flusher)

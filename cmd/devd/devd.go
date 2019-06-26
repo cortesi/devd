@@ -184,7 +184,7 @@ func main() {
 
 	hdrs := make(http.Header)
 	if *cors {
-		hdrs.Set("Access-Control-Allow-Origin", "*")
+		hdrs.Set("Access-Control-Allow-Credentials", "true")
 	}
 
 	var servingScheme string
@@ -196,9 +196,9 @@ func main() {
 
 	dd := devd.Devd{
 		// Shaping
-		Latency:  *latency,
-		DownKbps: *downKbps,
-		UpKbps:   *upKbps,
+		Latency:       *latency,
+		DownKbps:      *downKbps,
+		UpKbps:        *upKbps,
 		ServingScheme: servingScheme,
 
 		AddHeaders: &hdrs,
@@ -208,6 +208,8 @@ func main() {
 		Livereload:       *livereloadNaked,
 		WatchPaths:       *watch,
 		Excludes:         *excludes,
+
+		Cors: *cors,
 
 		Credentials: creds,
 	}
