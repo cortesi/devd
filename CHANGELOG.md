@@ -1,3 +1,9 @@
+# Unreleased
+
+* Improves CORS support. Allows connections with credentials that were
+  previously refused. See
+  <https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials>
+
 # v0.9: 21 January 2019
 
 * Fix live reload issues on Linux (Delyan Angelov)
