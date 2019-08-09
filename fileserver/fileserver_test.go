@@ -450,7 +450,7 @@ func TestFileServerZeroByte(t *testing.T) {
 	ts := httptest.NewServer(fs)
 	defer ts.Close()
 
-	res, err := http.Get(ts.URL + "/..\x00")
+	res, err := http.Get(ts.URL + "/" + url.PathEscape("..\x00"))
 	if err != nil {
 		t.Fatal(err)
 	}
