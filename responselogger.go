@@ -1,7 +1,9 @@
 package devd
 
 import (
+	"bufio"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 
@@ -15,6 +17,7 @@ import (
 type ResponseLogWriter struct {
 	Log         termlog.Logger
 	Resp        http.ResponseWriter
+	Hijacker    http.Hijacker
 	Flusher     http.Flusher
 	Timer       *timer.Timer
 	wroteHeader bool
@@ -86,4 +89,7 @@ func (rl *ResponseLogWriter) Flush() {
 	if rl.Flusher != nil {
 		rl.Flusher.Flush()
 	}
+}
+func (rl *ResponseLogWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return rl.Hijacker.Hijack()
 }
