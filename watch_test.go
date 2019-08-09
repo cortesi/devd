@@ -87,6 +87,8 @@ func TestRouteWatch(t *testing.T) {
 		v.Stop()
 	}
 
+	wg.Wait()
+
 	close(ch)
 	if len(changedFiles) != 3 {
 		t.Error("The watch should have been notified about 3 changed files")
