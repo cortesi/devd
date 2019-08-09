@@ -15,7 +15,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/GeertJohan/go.rice"
+	rice "github.com/GeertJohan/go.rice"
 	"github.com/goji/httpauth"
 
 	"github.com/cortesi/devd/httpctx"
@@ -29,7 +29,7 @@ import (
 
 const (
 	// Version is the current version of devd
-	Version  = "0.8"
+	Version  = "0.9"
 	portLow  = 8000
 	portHigh = 10000
 )
@@ -136,9 +136,9 @@ type Devd struct {
 	Routes RouteCollection
 
 	// Shaping
-	Latency  int
-	DownKbps uint
-	UpKbps   uint
+	Latency       int
+	DownKbps      uint
+	UpKbps        uint
 	ServingScheme string
 
 	// Add headers
