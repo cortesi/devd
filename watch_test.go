@@ -1,9 +1,9 @@
 package devd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -12,26 +12,9 @@ import (
 	"github.com/cortesi/termlog"
 )
 
-func addTempFile(wg *sync.WaitGroup, t *testing.T, tmpFolder string, fname string, content string) {
+func addTempFile(t *testing.T, tmpFolder string, fname string, content string) {
 	if err := ioutil.WriteFile(tmpFolder+"/"+fname, []byte(content), 0644); err != nil {
 		t.Error(err)
-	}
-	wg.Add(1)
-}
-
-// waitTimeout waits for the waitgroup for the specified max timeout.
-// Returns true if waiting timed out.
-func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
-	c := make(chan struct{})
-	go func() {
-		defer close(c)
-		wg.Wait()
-	}()
-	select {
-	case <-c:
-		return false // completed normally
-	case <-time.After(timeout):
-		return true // timed out
 	}
 }
 
@@ -51,19 +34,25 @@ func TestRouteWatch(t *testing.T) {
 	routes.Add(".", nil)
 
 	changedFiles := make(map[string]int)
-	ch := make(chan []string, 1)
-	var wg sync.WaitGroup
+	ch := make(chan []string, 1024)
+
+	var exited sync.WaitGroup
+	exited.Add(1)
+	var lck sync.Mutex
 	go func() {
 		for {
 			data, more := <-ch
 			if more {
-				t.Log("received notification for changed file(s):", strings.Join(data, ", "))
 				for i := range data {
-					changedFiles[data[i]] = 1
-					wg.Done()
+					lck.Lock()
+					fmt.Println(data)
+					if _, ok := changedFiles[data[i]]; !ok {
+						changedFiles[data[i]] = 1
+					}
+					lck.Unlock()
 				}
 			} else {
-				t.Log("No more changes are expected")
+				exited.Done()
 				return
 			}
 		}
@@ -78,19 +67,29 @@ func TestRouteWatch(t *testing.T) {
 		}
 		i++
 	}
-	addTempFile(&wg, t, tmpFolder, "a.txt", "foo\n")
-	addTempFile(&wg, t, tmpFolder, "c.txt", "bar\n")
-	addTempFile(&wg, t, tmpFolder, "another.file.txt", "bar\n")
-	waitTimeout(&wg, 5*time.Second)
+
+	addTempFile(t, tmpFolder, "a.txt", "foo\n")
+	addTempFile(t, tmpFolder, "c.txt", "bar\n")
+	addTempFile(t, tmpFolder, "another.file.txt", "bar\n")
+
+	for i := 0; i < 100; i++ {
+		lck.Lock()
+		if len(changedFiles) >= 3 {
+			lck.Unlock()
+			break
+		}
+		lck.Unlock()
+		time.Sleep(50 * time.Millisecond)
+	}
 
 	for _, v := range watchers {
 		v.Stop()
 	}
-
-	wg.Wait()
-
 	close(ch)
+
+	exited.Wait()
+
 	if len(changedFiles) != 3 {
-		t.Error("The watch should have been notified about 3 changed files")
+		t.Errorf("wanted 3 changed files, got %d", len(changedFiles))
 	}
 }

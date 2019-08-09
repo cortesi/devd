@@ -3,10 +3,12 @@ language: go
 go:
     - 1.12.x
 
-os:
-    - linux
-    - osx
-    - windows
+matrix:
+    include:
+        - os: linux
+        - os: windows
+        - os: osx
+          osx_image: xcode11
 
 install:
     - go get -t -v ./...
