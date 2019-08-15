@@ -7,7 +7,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4
 	github.com/bmatcuk/doublestar v1.1.5
-	github.com/cortesi/moddwatch v0.0.0-20190809034736-2411614b3ac7
+	github.com/cortesi/moddwatch v0.0.0-20190809041828-239a95c12d84
 	github.com/cortesi/termlog v0.0.0-20190809035425-7871d363854c
 	github.com/daaku/go.zipexe v1.0.1
 	github.com/dustin/go-humanize v1.0.0
@@ -23,7 +23,8 @@ require (
 	github.com/rjeczalik/notify v0.0.0-20181126183243-629144ba06a1
 	github.com/toqueteos/webbrowser v1.2.0
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
-	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80
-	golang.org/x/sys v0.0.0-20190804053845-51ab0e2deafa
+	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
+	golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a
+	golang.org/x/tools v0.0.0-20190815232600-256244171580 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )
