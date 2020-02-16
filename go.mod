@@ -24,7 +24,7 @@ require (
 	github.com/toqueteos/webbrowser v1.2.0
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
-	golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a
+	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4
 	golang.org/x/tools v0.0.0-20190815232600-256244171580 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )
