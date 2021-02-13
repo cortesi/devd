@@ -164,9 +164,22 @@ func (p *ReverseProxy) ServeHTTPContext(
 
 	res, err := transport.RoundTrip(outreq)
 	if err != nil {
-		log.Shout("reverse proxy error: %v", err)
-		rw.WriteHeader(http.StatusInternalServerError)
-		return
+		iter := 0
+		for true {
+			res, err = transport.RoundTrip(outreq)
+			if err == nil {
+				break
+			}
+			if iter > 100 {
+				log.Shout("fatal reverse proxy error on round trip: %v", err)
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			} else {
+				iter++
+				log.Shout("reverse proxy error on round trip: %v retry: %v", err, iter)
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
 	}
 	defer res.Body.Close()
 	if req.ContentLength > 0 {
@@ -175,7 +188,7 @@ func (p *ReverseProxy) ServeHTTPContext(
 
 	inject, err := p.Inject.Sniff(res.Body, res.Header.Get("Content-Type"))
 	if err != nil {
-		log.Shout("reverse proxy error: %v", err)
+		log.Shout("reverse proxy error on sniff: %v", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
