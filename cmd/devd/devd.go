@@ -5,7 +5,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/cortesi/devd"
+	"github.com/milanaleksic/devd"
 	"github.com/cortesi/termlog"
 	"github.com/mitchellh/go-homedir"
 	"github.com/toqueteos/webbrowser"
