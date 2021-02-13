@@ -9,11 +9,11 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/cortesi/devd/fileserver"
-	"github.com/cortesi/devd/httpctx"
-	"github.com/cortesi/devd/inject"
-	"github.com/cortesi/devd/reverseproxy"
-	"github.com/cortesi/devd/routespec"
+	"github.com/milanaleksic/devd/fileserver"
+	"github.com/milanaleksic/devd/httpctx"
+	"github.com/milanaleksic/devd/inject"
+	"github.com/milanaleksic/devd/reverseproxy"
+	"github.com/milanaleksic/devd/routespec"
 )
 
 // Endpoint is the destination of a Route - either on the filesystem or

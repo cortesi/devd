@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/GeertJohan/go.rice"
-	"github.com/cortesi/devd/inject"
-	"github.com/cortesi/devd/ricetemp"
+	"github.com/milanaleksic/devd/inject"
+	"github.com/milanaleksic/devd/ricetemp"
 	"github.com/cortesi/termlog"
 )
 

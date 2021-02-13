@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/GeertJohan/go.rice"
-	"github.com/cortesi/devd/inject"
+	"github.com/milanaleksic/devd/inject"
 	"github.com/cortesi/termlog"
 	"github.com/gorilla/websocket"
 )

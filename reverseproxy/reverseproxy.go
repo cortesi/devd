@@ -16,7 +16,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/cortesi/devd/inject"
+	"github.com/milanaleksic/devd/inject"
 	"github.com/cortesi/termlog"
 	humanize "github.com/dustin/go-humanize"
 )

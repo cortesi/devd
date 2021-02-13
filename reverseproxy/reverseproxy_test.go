@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cortesi/devd/inject"
+	"github.com/milanaleksic/devd/inject"
 )
 
 func TestReverseProxy(t *testing.T) {

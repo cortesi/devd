@@ -20,8 +20,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/cortesi/devd/inject"
-	"github.com/cortesi/devd/routespec"
+	"github.com/milanaleksic/devd/inject"
+	"github.com/milanaleksic/devd/routespec"
 	"github.com/cortesi/termlog"
 )
 

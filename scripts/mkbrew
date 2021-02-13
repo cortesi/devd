@@ -9,10 +9,10 @@ require "language/go"
 
 class Devd < Formula
   desc "Local webserver for developers"
-  homepage "https://github.com/cortesi/devd"
-  url "https://github.com/cortesi/devd/archive/{version}.tar.gz"
+  homepage "https://github.com/milanaleksic/devd"
+  url "https://github.com/milanaleksic/devd/archive/{version}.tar.gz"
   sha256 "{hash}"
-  head "https://github.com/cortesi/devd.git"
+  head "https://github.com/milanaleksic/devd.git"
 
   bottle do
     cellar :any_skip_relocation
@@ -28,9 +28,9 @@ class Devd < Formula
     ENV["GOOS"] = "darwin"
     ENV["GOARCH"] = MacOS.prefer_64_bit? ? "amd64" : "386"
     ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/cortesi/devd").install buildpath.children
+    (buildpath/"src/github.com/milanaleksic/devd").install buildpath.children
     Language::Go.stage_deps resources, buildpath/"src"
-    cd "src/github.com/cortesi/devd" do
+    cd "src/github.com/milanaleksic/devd" do
       system "go", "build", "-o", bin/"devd", ".../cmd/devd"
       prefix.install_metafiles
     end
@@ -52,7 +52,7 @@ end
 
 
 def main(version):
-    url = "https://github.com/cortesi/devd/archive/%s.tar.gz"%version
+    url = "https://github.com/milanaleksic/devd/archive/%s.tar.gz"%version
     print >> sys.stderr, "Calculating hash from %s..."%url
     resp = requests.get(url)
     if resp.status_code != 200:
