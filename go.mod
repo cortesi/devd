@@ -1,4 +1,4 @@
-module github.com/cortesi/devd
+module github.com/milanaleksic/devd
 
 go 1.12
 
