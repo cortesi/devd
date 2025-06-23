@@ -394,6 +394,7 @@ func TestServeFileWithContentEncoding(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Encoding", "foo")
 		ServeFile(w, r, "testdata/file")
+		w.(http.Flusher).Flush()
 	}))
 	defer ts.Close()
 	resp, err := http.Get(ts.URL)
