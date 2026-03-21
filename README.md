@@ -144,13 +144,13 @@ The [route specification syntax](#routes) is compact but powerful enough to cate
 
 ### Light-weight virtual hosting
 
-Devd uses a dedicated domain - **devd.io** - to do simple virtual hosting. This
+Devd uses a dedicated domain - **localhost** - to do simple virtual hosting. This
 domain and all its subdomains resolve to 127.0.0.1, which we use to set up
 virtual hosting without any changes to */etc/hosts* or other local
 configuration. Route specifications that don't start with a leading **/** are
-taken to be subdomains of **devd.io**. So, the following command serves a
-static site from devd.io, and reverse proxies a locally running app on
-api.devd.io:
+taken to be subdomains of **localhost**. So, the following command serves a
+static site from localhost, and reverse proxies a locally running app on
+api.localhost:
 
 <pre class="terminal">
 devd ./static api=http://localhost:8888
@@ -185,17 +185,17 @@ Here's a route that serves the directory *./static* under */assets* on the serve
 /assets/=./static
 ```
 
-To use a **devd.io** subdomain (which will resolve to 127.0.0.1), just add it
+To use a **localhost** subdomain (which will resolve to 127.0.0.1), just add it
 to the the front of the root specification. We recognize subdomains by the fact
 that they don't start with a leading **/**. So, this route serves the
-**/static** directory under **static.devd.io/assets**:
+**/static** directory under **static.localhost/assets**:
 
 ```
 static/assets=./static
 ```
 
 Reverse proxy specifications are similar, but the endpoint specification is a
-URL. The following serves a local URL from the root **app.devd.io/login**:
+URL. The following serves a local URL from the root **app.localhost/login**:
 
 ```
 app/login=http://localhost:8888
@@ -203,7 +203,7 @@ app/login=http://localhost:8888
 
 If the **root** specification is omitted, it is assumed to be "/", i.e. a
 pattern matching all paths. So, a simple directory specification serves the
-directory tree directly under **devd.io**:
+directory tree directly under **localhost**:
 
 ```
 devd ./static

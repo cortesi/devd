@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/GeertJohan/go.rice"
+	rice "github.com/GeertJohan/go.rice"
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/ricetemp"
 	"github.com/cortesi/termlog"
@@ -16,11 +16,11 @@ var formatURLTests = []struct {
 	port   int
 	output string
 }{
-	{true, "127.0.0.1", 8000, "https://devd.io:8000"},
-	{false, "127.0.0.1", 8000, "http://devd.io:8000"},
-	{false, "127.0.0.1", 80, "http://devd.io"},
-	{true, "127.0.0.1", 443, "https://devd.io"},
-	{false, "127.0.0.1", 443, "http://devd.io:443"},
+	{true, "127.0.0.1", 8000, "https://localhost:8000"},
+	{false, "127.0.0.1", 8000, "http://localhost:8000"},
+	{false, "127.0.0.1", 80, "http://localhost"},
+	{true, "127.0.0.1", 443, "https://localhost"},
+	{false, "127.0.0.1", 443, "http://localhost:443"},
 }
 
 func TestFormatURL(t *testing.T) {

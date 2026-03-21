@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const defaultDomain = "devd.io"
+const defaultDomain = "localhost"
 
 func checkURL(s string) (isURL bool, err error) {
 	var parsed *url.URL

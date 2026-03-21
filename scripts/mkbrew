@@ -45,7 +45,7 @@ class Devd < Formula
       Process.wait(io.pid)
     end
 
-    assert_match "Listening on http://devd.io", io.read
+    assert_match "Listening on http://localhost", io.read
   end
 end
 """
