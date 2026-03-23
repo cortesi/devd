@@ -13,7 +13,7 @@ Go to the [releases page](https://github.com/cortesi/devd/releases/latest), down
 
 If you have a working Go installation, you can also say
 
-    go get github.com/cortesi/devd/cmd/devd
+    go install github.com/cortesi/devd/cmd/devd@latest
 
 # Quick start
 
