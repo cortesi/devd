@@ -76,7 +76,8 @@ func revertOriginalHost(r *http.Request) {
 }
 
 // We can remove the mangling once this is fixed:
-// 		https://github.com/golang/go/issues/10463
+//
+//	https://github.com/golang/go/issues/10463
 func hostPortStrip(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host, _, err := net.SplitHostPort(r.Host)
@@ -105,7 +106,7 @@ func formatURL(tls bool, httpIP string, port int) string {
 	}
 	host := httpIP
 	if httpIP == "0.0.0.0" || httpIP == "127.0.0.1" {
-		host = "devd.io"
+		host = "localhost"
 	}
 	if port == 443 && tls {
 		return fmt.Sprintf("https://%s", host)

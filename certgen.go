@@ -39,8 +39,8 @@ func GenerateCert(dst string) error {
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 	}
-	template.DNSNames = append(template.DNSNames, "devd.io")
-	template.DNSNames = append(template.DNSNames, "*.devd.io")
+	template.DNSNames = append(template.DNSNames, "localhost")
+	template.DNSNames = append(template.DNSNames, "*.localhost")
 
 	derBytes, err := x509.CreateCertificate(
 		rand.Reader,

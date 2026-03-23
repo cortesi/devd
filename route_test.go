@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GeertJohan/go.rice"
+	rice "github.com/GeertJohan/go.rice"
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/ricetemp"
 )
@@ -51,17 +51,17 @@ var newSpecTests = []struct {
 	{"one=", nil, "invalid spec"},
 	{
 		"one/two=three",
-		&Route{"one.devd.io", "/two", tFilesystemEndpoint("three")},
+		&Route{"one.localhost", "/two", tFilesystemEndpoint("three")},
 		"",
 	},
 	{
 		"one=three",
-		&Route{"one.devd.io", "/", tFilesystemEndpoint("three")},
+		&Route{"one.localhost", "/", tFilesystemEndpoint("three")},
 		"",
 	},
 	{
 		"one=http://three",
-		&Route{"one.devd.io", "/", tForwardEndpoint("http://three")},
+		&Route{"one.localhost", "/", tForwardEndpoint("http://three")},
 		"",
 	},
 	{
@@ -81,7 +81,7 @@ var newSpecTests = []struct {
 	},
 	{
 		"one=:1234",
-		&Route{"one.devd.io", "/", tForwardEndpoint("http://localhost:1234")},
+		&Route{"one.localhost", "/", tForwardEndpoint("http://localhost:1234")},
 		"",
 	},
 }
