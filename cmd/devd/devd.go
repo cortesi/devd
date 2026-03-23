@@ -103,7 +103,7 @@ func main() {
 		Default("false").
 		Bool()
 
-	tls := kingpin.Flag("tls", "Serve TLS with auto-generated self-signed certificate (~/.devd.cert)").
+	autoCertFile := kingpin.Flag("tls", "Serve TLS with auto-generated self-signed certificate (~/.devd.cert)").
 		Short('s').
 		Default("false").
 		Bool()
@@ -188,7 +188,7 @@ func main() {
 	}
 
 	var servingScheme string
-	if *tls {
+	if *autoCertFile || certFile != nil {
 		servingScheme = "https"
 	} else {
 		servingScheme = "http"
@@ -246,7 +246,7 @@ func main() {
 		logger.Say("Route %s -> %s", i.MuxMatch(), i.Endpoint.String())
 	}
 
-	if *tls {
+	if *autoCertFile {
 		home, err := homedir.Dir()
 		if err != nil {
 			kingpin.Fatalf("Could not get user's homedir: %s", err)
