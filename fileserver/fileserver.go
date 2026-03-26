@@ -229,7 +229,7 @@ func localRedirect(w http.ResponseWriter, r *http.Request, newPath string) {
 // To use the operating system's file system implementation,
 // use http.Dir:
 //
-//     http.Handle("/", &fileserver.FileServer{Root: http.Dir("/tmp")})
+//	http.Handle("/", &fileserver.FileServer{Root: http.Dir("/tmp")})
 type FileServer struct {
 	Version        string
 	Root           http.FileSystem
