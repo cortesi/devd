@@ -101,7 +101,7 @@ func (ci *CopyInject) Sniff(src io.Reader, contentType string) (Injector, error)
 		return nil, fmt.Errorf("inject could not read data to sniff: %s", err)
 	}
 	injector.sniffedData = buf[:n]
-	if bytes.Index(buf, ci.Payload) > -1 {
+	if bytes.Contains(buf, ci.Payload) {
 		return injector, nil
 	}
 	loc := ci.Marker.FindIndex(injector.sniffedData[:min(n, ci.Within)])
@@ -114,7 +114,7 @@ func (ci *CopyInject) Sniff(src io.Reader, contentType string) (Injector, error)
 
 // ServeTemplate renders and serves a template to an http.ResponseWriter
 func (ci *CopyInject) ServeTemplate(statuscode int, w http.ResponseWriter, t *template.Template, data interface{}) error {
-	buff := bytes.NewBuffer(make([]byte, 0, 0))
+	buff := bytes.NewBuffer(make([]byte, 0))
 	err := t.Execute(buff, data)
 	if err != nil {
 		return err

@@ -6,9 +6,7 @@ package fileserver
 
 import (
 	"bytes"
-	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,7 +15,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -49,11 +46,11 @@ func ServeFile(w http.ResponseWriter, r *http.Request, name string) {
 
 func ServeContent(w http.ResponseWriter, req *http.Request, name string, modtime time.Time, content io.ReadSeeker) error {
 	sizeFunc := func() (int64, error) {
-		size, err := content.Seek(0, os.SEEK_END)
+		size, err := content.Seek(0, io.SeekEnd)
 		if err != nil {
 			return 0, errSeeker
 		}
-		_, err = content.Seek(0, os.SEEK_SET)
+		_, err = content.Seek(0, io.SeekStart)
 		if err != nil {
 			return 0, errSeeker
 		}
@@ -66,12 +63,6 @@ const (
 	testFile    = "testdata/file"
 	testFileLen = 11
 )
-
-type wantRange struct {
-	start, end int64 // range [start,end)
-}
-
-var itoa = strconv.Itoa
 
 var notFoundSearchPathsSpecs = []struct {
 	path   string
@@ -131,7 +122,7 @@ func TestServeFile(t *testing.T) {
 
 	var err error
 
-	file, err := ioutil.ReadFile(testFile)
+	file, err := os.ReadFile(testFile)
 	if err != nil {
 		t.Fatal("reading file:", err)
 	}
@@ -188,47 +179,6 @@ func TestFSRedirect(t *testing.T) {
 	}
 }
 
-type testFileSystem struct {
-	open func(name string) (http.File, error)
-}
-
-func (fs *testFileSystem) Open(name string) (http.File, error) {
-	return fs.open(name)
-}
-
-func _TestFileServerCleans(t *testing.T) {
-	defer afterTest(t)
-	ch := make(chan string, 1)
-	fs := &FileServer{
-		"version",
-		&testFileSystem{
-			func(name string) (http.File, error) {
-				ch <- name
-				return nil, errors.New("file does not exist")
-			},
-		},
-		inject.CopyInject{},
-		ricetemp.MustMakeTemplates(rice.MustFindBox("../templates")),
-		[]routespec.RouteSpec{},
-		"",
-	}
-	tests := []struct {
-		reqPath, openArg string
-	}{
-		{"/foo.txt", "/foo.txt"},
-		{"/../foo.txt", "/foo.txt"},
-	}
-	req, _ := http.NewRequest("GET", "http://example.com", nil)
-	for n, test := range tests {
-		rec := httptest.NewRecorder()
-		req.URL.Path = test.reqPath
-		fs.ServeHTTP(rec, req)
-		if got := <-ch; got != test.openArg {
-			t.Errorf("test %d: got %q, want %q", n, got, test.openArg)
-		}
-	}
-}
-
 func mustRemoveAll(dir string) {
 	err := os.RemoveAll(dir)
 	if err != nil {
@@ -238,12 +188,12 @@ func mustRemoveAll(dir string) {
 
 func TestFileServerImplicitLeadingSlash(t *testing.T) {
 	defer afterTest(t)
-	tempDir, err := ioutil.TempDir("", "")
+	tempDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatalf("TempDir: %v", err)
 	}
 	defer mustRemoveAll(tempDir)
-	if err := ioutil.WriteFile(filepath.Join(tempDir, "foo.txt"), []byte("Hello world"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tempDir, "foo.txt"), []byte("Hello world"), 0644); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
 	fs := &FileServer{
@@ -262,7 +212,7 @@ func TestFileServerImplicitLeadingSlash(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Get %s: %v", suffix, err)
 		}
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		if err != nil {
 			t.Fatalf("ReadAll %s: %v", suffix, err)
 		}
@@ -427,7 +377,7 @@ func TestServeIndexHtml(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		if err != nil {
 			t.Fatal("reading Body:", err)
 		}
@@ -455,7 +405,7 @@ func TestFileServerZeroByte(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal("reading Body:", err)
 	}
@@ -623,7 +573,7 @@ func TestDirectoryIfNotModified(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -806,7 +756,7 @@ func TestServeContent(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = io.Copy(ioutil.Discard, res.Body)
+		_, err = io.Copy(io.Discard, res.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -828,7 +778,7 @@ func getBody(t *testing.T, testName string, req http.Request) (*http.Response, [
 	if err != nil {
 		t.Fatalf("%s: for URL %q, send error: %v", testName, req.URL.String(), err)
 	}
-	b, err := ioutil.ReadAll(r.Body)
+	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		t.Fatalf("%s: for URL %q, reading body: %v", testName, req.URL.String(), err)
 	}

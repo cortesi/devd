@@ -1,14 +1,13 @@
 package devd
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
 )
 
 func TestGenerateCert(t *testing.T) {
-	d, err := ioutil.TempDir("", "devdtest")
+	d, err := os.MkdirTemp("", "devdtest")
 	if err != nil {
 		t.Error(err)
 		return

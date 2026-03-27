@@ -7,7 +7,7 @@
 package reverseproxy
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -46,7 +46,13 @@ func TestReverseProxy(t *testing.T) {
 		w.Header().Set("X-Foo", "bar")
 		http.SetCookie(w, &http.Cookie{Name: "flavor", Value: "chocolateChip"})
 		w.WriteHeader(backendStatus)
-		w.Write([]byte(backendResponse))
+		n, err := w.Write([]byte(backendResponse))
+		if err != nil {
+			t.Errorf("backend write error: %s", err)
+		}
+		if n != len(backendResponse) {
+			t.Errorf("backend write short: got %d want %d", n, len(backendResponse))
+		}
 	}))
 	defer backend.Close()
 	backendURL, err := url.Parse(backend.URL)
@@ -78,7 +84,7 @@ func TestReverseProxy(t *testing.T) {
 	if cookie := res.Cookies()[0]; cookie.Name != "flavor" {
 		t.Errorf("unexpected cookie %q", cookie.Name)
 	}
-	bodyBytes, _ := ioutil.ReadAll(res.Body)
+	bodyBytes, _ := io.ReadAll(res.Body)
 	if g, e := string(bodyBytes), backendResponse; g != e {
 		t.Errorf("got body %q; expected %q", g, e)
 	}
@@ -96,7 +102,13 @@ func TestXForwardedFor(t *testing.T) {
 			t.Errorf("X-Forwarded-For didn't contain prior data")
 		}
 		w.WriteHeader(backendStatus)
-		w.Write([]byte(backendResponse))
+		n, err := w.Write([]byte(backendResponse))
+		if err != nil {
+			t.Errorf("forward write error: %s", err)
+		}
+		if n != len(backendResponse) {
+			t.Errorf("forward write short: got %d want %d", n, len(backendResponse))
+		}
 	}))
 	defer backend.Close()
 	backendURL, err := url.Parse(backend.URL)
@@ -119,7 +131,7 @@ func TestXForwardedFor(t *testing.T) {
 	if g, e := res.StatusCode, backendStatus; g != e {
 		t.Errorf("got res.StatusCode %d; expected %d", g, e)
 	}
-	bodyBytes, _ := ioutil.ReadAll(res.Body)
+	bodyBytes, _ := io.ReadAll(res.Body)
 	if g, e := string(bodyBytes), backendResponse; g != e {
 		t.Errorf("got body %q; expected %q", g, e)
 	}
@@ -139,7 +151,7 @@ var proxyQueryTests = []struct {
 func TestReverseProxyQuery(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Got-Query", r.URL.RawQuery)
-		w.Write([]byte("hi"))
+		_, _ = w.Write([]byte("hi"))
 	}))
 	defer backend.Close()
 
@@ -166,7 +178,7 @@ func TestReverseProxyQuery(t *testing.T) {
 func TestReverseProxyFlushInterval(t *testing.T) {
 	const expected = "hi"
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(expected))
+		_, _ = w.Write([]byte(expected))
 	}))
 	defer backend.Close()
 
@@ -192,7 +204,7 @@ func TestReverseProxyFlushInterval(t *testing.T) {
 		t.Fatalf("Get: %v", err)
 	}
 	defer res.Body.Close()
-	if bodyBytes, _ := ioutil.ReadAll(res.Body); string(bodyBytes) != expected {
+	if bodyBytes, _ := io.ReadAll(res.Body); string(bodyBytes) != expected {
 		t.Errorf("got body %q; expected %q", bodyBytes, expected)
 	}
 
