@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	rice "github.com/GeertJohan/go.rice"
+	"github.com/cortesi/devd/fstmpl"
 	"github.com/cortesi/devd/inject"
-	"github.com/cortesi/devd/ricetemp"
+	"github.com/cortesi/devd/templates"
 )
 
 func tFilesystemEndpoint(s string) *filesystemEndpoint {
@@ -121,11 +121,7 @@ func TestForwardEndpoint(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
 	}
-	rb, err := rice.FindBox("templates")
-	if err != nil {
-		t.Error(err)
-	}
-	templates, err := ricetemp.MakeTemplates(rb)
+	templates, err := fstmpl.MakeTemplates(templates.FS)
 	if err != nil {
 		panic(err)
 	}
@@ -161,11 +157,7 @@ func TestRouteHandler(t *testing.T) {
 			)
 		}
 
-		rb, err := rice.FindBox("templates")
-		if err != nil {
-			t.Error(err)
-		}
-		templates, err := ricetemp.MakeTemplates(rb)
+		templates, err := fstmpl.MakeTemplates(templates.FS)
 		if err != nil {
 			panic(err)
 		}
