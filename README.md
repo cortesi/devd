@@ -1,7 +1,4 @@
-
-[![Travis Build Status](https://travis-ci.org/cortesi/devd.svg?branch=master)](https://travis-ci.org/cortesi/devd)
-
-
+[![CI](https://github.com/cortesi/devd/actions/workflows/ci.yml/badge.svg)](https://github.com/cortesi/devd/actions/workflows/ci.yml)
 
 # devd: a local webserver for developers
 
@@ -309,6 +306,5 @@ correctly.
 
 # Development
 
-The scripts used to build this package for distribution can be found
-[here](https://github.com/cortesi/godist). External packages are vendored using
-[dep](https://github.com/golang/dep).
+This project uses standard Go modules for dependency management.
+Automated builds and releases are handled via GitHub Actions and [GoReleaser](https://goreleaser.com/).
