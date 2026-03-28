@@ -11,9 +11,16 @@
 
 Go to the [releases page](https://github.com/cortesi/devd/releases/latest), download the package for your OS, and copy the binary to somewhere on your PATH.
 
-If you have a working Go installation, you can also say
+If you have a working Go installation, you can also install by doing
 
-    go install github.com/cortesi/devd/cmd/devd@latest
+```sh
+# install latest release
+go install github.com/cortesi/devd/cmd/devd@latest
+# install latest master
+go install github.com/cortesi/devd/cmd/devd@master
+# copy devd binary to /usr/local/bin
+cp "$(go env GOPATH)/bin/devd" /usr/local/bin
+```
 
 # Quick start
 
