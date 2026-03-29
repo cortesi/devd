@@ -8,6 +8,10 @@ builds:
     binary: devd
     env:
       - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
     targets:
       - darwin_amd64
       - darwin_arm64
@@ -19,6 +23,13 @@ builds:
       - netbsd_arm
       - openbsd_amd64
       - freebsd_amd64
+    overrides:
+      - goos: linux
+        flags:
+          - -trimpath
+          - -tags=osusergo,netgo
+        ldflags:
+          - -s -w
 
 archives:
   - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
