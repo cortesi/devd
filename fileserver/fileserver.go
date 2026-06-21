@@ -4,6 +4,7 @@
 package fileserver
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"html/template"
@@ -17,8 +18,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/devd/routespec"
@@ -115,7 +114,7 @@ func serveContent(ci inject.CopyInject, w http.ResponseWriter, r *http.Request, 
 			var buf [sniffLen]byte
 			n, _ := io.ReadFull(content, buf[:])
 			ctype = http.DetectContentType(buf[:n])
-			_, err := content.Seek(0, os.SEEK_SET) // rewind to output whole file
+			_, err := content.Seek(0, io.SeekStart) // rewind to output whole file
 			if err != nil {
 				http.Error(w, "seeker can't seek", http.StatusInternalServerError)
 				return err
@@ -301,10 +300,7 @@ func _getType(ext string) string {
 func matchTypes(spec string, req string) bool {
 	smime := _getType(path.Ext(spec))
 	rmime := _getType(path.Ext(req))
-	if smime == rmime {
-		return true
-	}
-	return false
+	return smime == rmime
 }
 
 func (fserver *FileServer) serve404(w http.ResponseWriter) error {

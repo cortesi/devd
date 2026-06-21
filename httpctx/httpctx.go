@@ -2,10 +2,9 @@
 package httpctx
 
 import (
+	"context"
 	"net/http"
 	"strings"
-
-	"golang.org/x/net/context"
 )
 
 // Handler is a request handler with an added context

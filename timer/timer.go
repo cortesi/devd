@@ -3,10 +3,9 @@
 package timer
 
 import (
+	"context"
 	"fmt"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // Timer collects request and response timing information
@@ -47,14 +46,16 @@ func (t *Timer) ResponseDone() {
 	t.tsResponseDone = time.Now().UnixNano()
 }
 
+type timerKey string
+
 // NewContext creates a new context with the timer included
 func (t *Timer) NewContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, "timer", t)
+	return context.WithValue(ctx, timerKey("timer"), t)
 }
 
 // FromContext creates a new context with the timer included
 func FromContext(ctx context.Context) *Timer {
-	timer, ok := ctx.Value("timer").(*Timer)
+	timer, ok := ctx.Value(timerKey("timer")).(*Timer)
 	if !ok {
 		// Return a dummy timer
 		return &Timer{}

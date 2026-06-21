@@ -18,7 +18,7 @@ func inject(ci CopyInject, data string, contentType string) (found bool, dstdata
 	if err != nil {
 		return false, "", err
 	}
-	return injector.Found(), string(dst.Bytes()), nil
+	return injector.Found(), dst.String(), nil
 }
 
 func TestReverseProxyNoInject(t *testing.T) {
@@ -67,7 +67,7 @@ func TestReverseProxy(t *testing.T) {
 		if err != nil {
 			t.Errorf("Test %d, unexpected error:\n%s\n", i, err)
 		}
-		if found && strings.Index(dst, tt.payload) == -1 {
+		if found && !strings.Contains(dst, tt.payload) {
 			t.Errorf(
 				"Test %d, payload not found.", i,
 			)
@@ -110,8 +110,8 @@ func TestNil(t *testing.T) {
 		t.Error("Unexpected")
 	}
 	dst := bytes.NewBuffer(make([]byte, 0))
-	injector.Copy(dst)
-	if string(dst.Bytes()) != val {
-		t.Errorf("Expected %s, got %s", val, string(dst.Bytes()))
+	_, _ = injector.Copy(dst)
+	if dst.String() != val {
+		t.Errorf("Expected %s, got %s", val, dst.String())
 	}
 }

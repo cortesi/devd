@@ -2,7 +2,6 @@ package devd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"sync"
 	"testing"
@@ -13,7 +12,7 @@ import (
 )
 
 func addTempFile(t *testing.T, tmpFolder string, fname string, content string) {
-	if err := ioutil.WriteFile(tmpFolder+"/"+fname, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(tmpFolder+"/"+fname, []byte(content), 0644); err != nil {
 		t.Error(err)
 	}
 }
@@ -22,16 +21,16 @@ func TestRouteWatch(t *testing.T) {
 	logger := termlog.NewLog()
 	logger.Quiet()
 
-	tmpFolder, err := ioutil.TempDir("", "")
+	tmpFolder, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Error(err)
 	}
 	defer os.RemoveAll(tmpFolder)
 
 	// Ensure that using . for the path works:
-	os.Chdir(tmpFolder)
+	_ = os.Chdir(tmpFolder)
 	routes := make(RouteCollection)
-	routes.Add(".", nil)
+	_ = routes.Add(".", nil)
 
 	changedFiles := make(map[string]int)
 	ch := make(chan []string, 1024)

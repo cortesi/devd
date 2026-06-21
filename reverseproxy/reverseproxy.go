@@ -4,6 +4,7 @@
 package reverseproxy
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -13,8 +14,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/cortesi/devd/inject"
 	"github.com/cortesi/termlog"

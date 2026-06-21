@@ -1,6 +1,7 @@
 package devd
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"html/template"
@@ -12,8 +13,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"golang.org/x/net/context"
 
 	rice "github.com/GeertJohan/go.rice"
 	"github.com/goji/httpauth"
@@ -55,7 +54,7 @@ func pickPort(addr string, low int, high int, tls bool) (net.Listener, error) {
 func getTLSConfig(path string) (t *tls.Config, err error) {
 	config := &tls.Config{}
 	if config.NextProtos == nil {
-		config.NextProtos = []string{"http/1.1"}
+		config.NextProtos = []string{"h2", "http/1.1"}
 	}
 	config.Certificates = make([]tls.Certificate, 1)
 	config.Certificates[0], err = tls.LoadX509KeyPair(path, path)
@@ -245,7 +244,7 @@ func (dd *Devd) AddRoutes(specs []string, notfound []string) error {
 
 // AddIgnores adds log ignore patterns to the server
 func (dd *Devd) AddIgnores(specs []string) error {
-	dd.IgnoreLogs = make([]*regexp.Regexp, 0, 0)
+	dd.IgnoreLogs = make([]*regexp.Regexp, 0)
 	for _, expr := range specs {
 		v, err := regexp.Compile(expr)
 		if err != nil {
@@ -296,7 +295,7 @@ func (dd *Devd) Router(logger termlog.TermLog, templates *template.Template) (ht
 		mux.Handle(livereload.ScriptPath, http.HandlerFunc(lr.ServeScript))
 		seen := make(map[string]bool)
 		for _, route := range dd.Routes {
-			if _, ok := seen[route.Host]; route.Host != "" && ok == false {
+			if _, ok := seen[route.Host]; route.Host != "" && !ok {
 				mux.Handle(route.Host+livereload.EndpointPath, lr)
 				mux.Handle(
 					route.Host+livereload.ScriptPath,
