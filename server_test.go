@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	rice "github.com/GeertJohan/go.rice"
+	"github.com/cortesi/devd/fstmpl"
 	"github.com/cortesi/devd/inject"
-	"github.com/cortesi/devd/ricetemp"
+	"github.com/cortesi/devd/templates"
 	"github.com/cortesi/termlog"
 )
 
@@ -53,7 +53,7 @@ func TestDevdRouteHandler(t *testing.T) {
 	logger := termlog.NewLog()
 	logger.Quiet()
 	r := Route{"", "/", fsEndpoint("./testdata")}
-	templates := ricetemp.MustMakeTemplates(rice.MustFindBox("templates"))
+	templates := fstmpl.MustMakeTemplates(templates.FS)
 	ci := inject.CopyInject{}
 
 	devd := Devd{LivereloadRoutes: true}
@@ -66,7 +66,7 @@ func TestDevdRouteHandler(t *testing.T) {
 func TestDevdHandler(t *testing.T) {
 	logger := termlog.NewLog()
 	logger.Quiet()
-	templates := ricetemp.MustMakeTemplates(rice.MustFindBox("templates"))
+	templates := fstmpl.MustMakeTemplates(templates.FS)
 
 	devd := Devd{LivereloadRoutes: true, WatchPaths: []string{"./"}}
 	err := devd.AddRoutes([]string{"./"}, []string{})

@@ -3,7 +3,6 @@ module github.com/cortesi/devd
 go 1.25.0
 
 require (
-	github.com/GeertJohan/go.rice v1.0.3
 	github.com/cortesi/moddwatch v0.1.0
 	github.com/cortesi/termlog v0.0.0-20250523085554-f86697764bb0
 	github.com/dustin/go-humanize v1.0.1
@@ -21,7 +20,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
-	github.com/daaku/go.zipexe v1.0.2 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect

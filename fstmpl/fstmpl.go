@@ -1,12 +1,13 @@
-// Package ricetemp makes templates from a ricebox.
-package ricetemp
+// Package fstmpl makes templates from a fs.FS
+package fstmpl
 
 import (
 	"html/template"
+	"io"
+	"io/fs"
 	"os"
 	"strings"
 
-	"github.com/GeertJohan/go.rice"
 	"github.com/dustin/go-humanize"
 )
 
@@ -25,16 +26,16 @@ func fileType(f os.FileInfo) string {
 }
 
 // MustMakeTemplates makes templates, and panic on error
-func MustMakeTemplates(rb *rice.Box) *template.Template {
-	templates, err := MakeTemplates(rb)
+func MustMakeTemplates(fs fs.ReadDirFS) *template.Template {
+	templates, err := MakeTemplates(fs)
 	if err != nil {
 		panic(err)
 	}
 	return templates
 }
 
-// MakeTemplates takes a rice.Box and returns a html.Template
-func MakeTemplates(rb *rice.Box) (*template.Template, error) {
+// MakeTemplates takes a fs.ReadDirFS and returns a html.Template
+func MakeTemplates(fs fs.ReadDirFS) (*template.Template, error) {
 	tmpl := template.New("")
 
 	funcMap := template.FuncMap{
@@ -44,14 +45,20 @@ func MakeTemplates(rb *rice.Box) (*template.Template, error) {
 	}
 	tmpl.Funcs(funcMap)
 
-	err := rb.Walk("", func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			_, err := tmpl.New(path).Parse(rb.MustString(path))
-			if err != nil {
-				return err
-			}
+	ds, err := fs.ReadDir(".")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, d := range ds {
+		f, _ := fs.Open(d.Name())
+		fbs, _ := io.ReadAll(f)
+
+		_, err := tmpl.New(d.Name()).Parse(string(fbs))
+		if err != nil {
+			return nil, err
 		}
-		return nil
-	})
+	}
+
 	return tmpl, err
 }
